@@ -72,3 +72,9 @@ CREATE TABLE chat(
     image CHAR(512)
 );
 success!
+timestamp: 2016-05-13T22:29:35.734474
+ALTER TABLE chat ADD updated_at TIMESTAMP;
+success!
+timestamp: 2016-05-13T23:01:36.170384
+ALTER TABLE category ADD slug CHAR(512);
+success!

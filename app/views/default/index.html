@@ -1,31 +1,44 @@
 {{extend 'layout-home.html'}}
 
 {{block body}}
-<div class="twelve wide column">
+<div class="thirteen wide column">
   <div class="ui three stackable doubling cards">
 
-    <div class="ui fluid link card">
+    {{for chat in chats:}}
+    <div class="ui fluid link card" onclick="location.href = '{{=chat.url}}';">
       <div class="content">
-        <img class="ui left floated mini circular image" src="images/card-image.jpg">
-        <div class="right floated meta edit-card" data-content="editar/atualizar info" data-variation="inverted" data-offset="-12"><i class="edit icon link"></i></div>
-        <div class="header">Ubuntu Linux Brasil</div>
+        <img class="ui left floated mini circular image" src="{{=URL('download', args=chat.image) if chat.image else URL('static', 'images/card-image.jpg')}}">
+        <div class="right floated meta edit-card" data-content="editar/atualizar info" data-variation="inverted" data-offset="-12" onclick="editChat({{=chat.id}})"><i class="edit icon link"></i></div>
+        <div class="header">{{=chat.name}}</div>
         <div class="meta">
-          <span class="category">350 membros</span>
+          <span class="category">{{=chat.members}}</span>
         </div>
         <div class="description">
-          <p>Grupo de discussão da comunidade brasileira de Ubuntu.</p>
+          <p>{{=chat.description}}</p>
         </div>
       </div>
       <div class="extra content">
         <div class="left floated">
-          Atualizado há 350 dias
+          Atualizado há {{=(request.now - chat.updated_at).days}} dias
         </div>
         <div class="right floated author">
-          @UbuntuBrasil
+          {{=chat.username}}
         </div>
       </div>
     </div>
+    {{pass}}
 
   </div>
 </div>
+{{end}}
+
+{{block script}}
+<script>
+  function editChat(id) {
+    if (!e) var e = window.event;
+    e.cancelBubble = true;
+    if (e.stopPropagation) e.stopPropagation();
+    location.href = "{{=URL('default', 'form', host=True)}}/" + id
+  }
+</script>
 {{end}}

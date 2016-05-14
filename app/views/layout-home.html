@@ -65,14 +65,13 @@
 
 		<div class="ui stackable grid">
 
-			<div class="four wide column">
+			<div class="three wide column">
 				<div class="ui secondary vertical pointing fluid menu">
-				  <a class="active item">Linux</a>
-					<a class="item">Distribuições Linux</a>
-				  <a class="item">Frontend</a>
-				  <a class="item">Backend</a>
-				  <a class="item">Tecnologia</a>
-				  <a class="item">Gráficos</a>
+          {{if categories:}}
+            {{for cat in categories:}}
+            <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">{{=cat.name}}</a>
+            {{pass}}
+          {{pass}}
 				</div><!-- /secondary menu -->
 			</div>
 
@@ -84,6 +83,8 @@
 	</div>
 
   <script src="{{=URL('static', 'js/semantic-start.js')}}" charset="utf-8"></script>
+  {{block script}}
+  {{end}}
 </body>
 
 </html>

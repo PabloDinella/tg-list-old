@@ -8,6 +8,9 @@
 # - download is for downloading files uploaded in the db (does streaming)
 # -------------------------------------------------------------------------
 
+import datetime
+import time
+
 
 def index():
     """
@@ -17,8 +20,35 @@ def index():
     if you need a simple wiki simply replace the two lines below with:
     return auth.wiki()
     """
-    response.flash = T("Hello World")
-    return dict(message=T('Welcome to web2py!'))
+
+    category = db(db.category.slug == request.args(0)).select().first()
+    if category:
+        query = db.chat.category == category
+    else:
+        query = db.chat
+    chats = db(query).select()
+    return locals()
+
+
+def form():
+    """
+    example action using the internationalization operator T and flash
+    rendered by views/default/index.html or views/generic.html
+
+    if you need a simple wiki simply replace the two lines below with:
+    return auth.wiki()
+    """
+
+    record = db(db.chat.id == request.args(0)).select().first()
+    form = SQLFORM(db.chat,
+                   record,
+                   _class='ui form',
+                   submit_button='Enviar')
+
+    if request.post_vars:
+        print request.post_vars
+
+    return locals()
 
 
 def user():
@@ -57,5 +87,3 @@ def call():
     supports xml, json, xmlrpc, jsonrpc, amfrpc, rss, csv
     """
     return service()
-
-
