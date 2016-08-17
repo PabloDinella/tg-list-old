@@ -1,26 +1,33 @@
 {{extend 'layout-home.html'}}
 
 {{block body}}
-<div class="thirteen wide column">
+
   {{=form.custom.begin}}
 
     <div class="three fields">
       <div class="required field">
         <label>Nome do grupo</label>
-        {{form.custom.widget.name.attributes.pop('_class', None)}}
-        {{form.custom.widget.name.attributes['_placeholder'] = 'Nome do grupo'}}
+        {{form.custom.widget.name.attributes.update(
+            _class='',
+            _placeholder='Nome do grupo',
+            _required='required'
+        )}}
         {{=form.custom.widget.name}}
       </div>
       <div class="field">
         <label>Username</label>
-        {{form.custom.widget.username.attributes.pop('_class', None)}}
-        {{form.custom.widget.username.attributes['_placeholder'] = '@username'}}
+        {{form.custom.widget.username.attributes.update(
+            _class='',
+            _placeholder='@username',
+        )}}
         {{=form.custom.widget.username}}
       </div>
       <div class="field">
         <label>Quantidade de membros</label>
-        {{form.custom.widget.members.attributes.pop('_class', None)}}
-        {{form.custom.widget.members.attributes['_type'] = 'number'}}
+        {{form.custom.widget.members.attributes.update(
+            _class='',
+            _type='number',
+        )}}
         {{=form.custom.widget.members}}
       </div>
     </div>
@@ -28,11 +35,17 @@
     <div class="two fields">
       <div class="required field">
         <label>Link</label>
-        {{form.custom.widget.url.attributes.pop('_class', None)}}
-        {{form.custom.widget.url.attributes['_type'] = 'url'}}
+
         {{if not form.custom.widget.url.attributes['_value']:}}
-        {{form.custom.widget.url.attributes['_value'] = 'http://'}}
+            {{form.custom.widget.url.attributes['_value']='http://'}}
         {{pass}}
+
+        {{form.custom.widget.url.attributes.update(
+            _class='',
+            _type='url',
+            _required='required'
+        )}}
+
         {{=form.custom.widget.url}}
       </div>
       <div class="required field">
@@ -42,24 +55,23 @@
       </div>
     </div>
 
-    <div class="required field">
-      <label>Descrição do grupo</label>
-      {{form.custom.widget.description.attributes.pop('_class', None)}}
-      {{form.custom.widget.description.attributes.pop('_cols', None)}}
-      {{form.custom.widget.description.attributes['_rows'] = 2}}
-      {{=form.custom.widget.description}}
+    <div class="field">
+        <label>Quantidade de membros</label>
+        {{=form.custom.widget.image}}
     </div>
-
-    <!-- <div class="field">
-      <div class="ui checkbox">
-        <input type="checkbox" tabindex="0" class="hidden">
-        <label>Eu sou ADM do grupo</label>
-      </div>
-    </div> -->
+    <div class="required field">
+        <label>Descrição do grupo</label>
+        {{form.custom.widget.description.attributes.update(
+            _class='',
+            _cols='',
+            _rows='3',
+            _required='required'
+        )}}
+        {{=form.custom.widget.description}}
+    </div>
 
     {{form.custom.submit.attributes['_class'] = 'ui button'}}
     {{=form.custom.submit}}
 
   {{=form.custom.end}}
-</div>
 {{end}}
