@@ -1,0 +1,17 @@
+{{extend 'layout-base.html'}}
+
+{{block content}}
+
+    {{block body}}
+    {{end}}
+
+  <script src="{{=URL('static', 'js/semantic-start.js')}}" charset="utf-8"></script>
+  <script>
+      $('.add-group').on('click', function () {
+          location.href = '{{=URL('default', 'edit')}}'
+      })
+  </script>
+  {{block script}}
+  {{end}}
+
+{{end}}
