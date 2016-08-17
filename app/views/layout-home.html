@@ -36,25 +36,17 @@
 		      </div>
 		    </div>
 
-				<div class="ui dropdown item">
-				  Nome do Usuário
-				  <i class="dropdown icon"></i>
-				  <div class="menu">
-				    <div class="item">
-							<i class="plus icon"></i>
-							Adicionar Grupo
-						</div>
-				    <div class="item">
-							<i class="plus icon"></i>
-							Adicionar Canal
-						</div>
-						<div class="ui divider"></div>
-				    <div class="item">
-							<i class="power icon"></i>
-							Sair
-						</div>
-				  </div>
-				</div>
+			<div class="ui dropdown item">
+			  Nome do Usuário <i class="dropdown icon"></i>
+			  <div class="menu">
+			    <div class="item"><i class="plus icon"></i>Adicionar Grupo</div>
+			    <div class="item"><i class="plus icon"></i>Adicionar Canal</div>
+
+				<div class="ui divider"></div>
+
+			    <div class="item"><i class="power icon"></i>Sair</div>
+			  </div>
+			</div>
 
 		  </div>
 
@@ -67,11 +59,12 @@
 
 			<div class="three wide column">
 				<div class="ui secondary vertical pointing fluid menu">
-          {{if categories:}}
-            {{for cat in categories:}}
-            <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">{{=cat.name}}</a>
-            {{pass}}
-          {{pass}}
+                    <a href="{{=URL('index', args='todos')}}" class="item {{='active' if request.args(0) == 'todos' else ''}}">Todos</a>
+                    {{if categories:}}
+                        {{for cat in categories:}}
+                        <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">{{=cat.name}}</a>
+                        {{pass}}
+                    {{pass}}
 				</div><!-- /secondary menu -->
 			</div>
 
