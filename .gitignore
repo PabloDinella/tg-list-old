@@ -1,3 +1,7 @@
 app/errors/
 *.pyc
 *.log
+*/*/*/sessions/
+*.pid
+*/parameters_8080.py
+
