@@ -16,7 +16,11 @@ db.define_table('chat',
                 Field('updated_at', 'datetime', default=request.now),
                 format=lambda r: r.name or 'anonymous')
 
-db.chat.category.requires = IS_IN_DB(db, 'category.id', '%(name)s',
-                                 	 zero=T('Escolha uma categoria'))
+db.chat.category.requires = IS_IN_DB(
+    db, 'category.id', '%(name)s', zero=T('Escolha uma categoria')
+)
+db.chat.updated_at.requires = IS_DATETIME()
+db.chat.url.requires = IS_NOT_EMPTY()
+db.chat.description.requires = IS_NOT_EMPTY()
 
 categories = db(db.category).select(orderby=db.category.name)
