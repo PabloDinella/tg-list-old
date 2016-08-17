@@ -38,7 +38,7 @@
     if (!e) var e = window.event;
     e.cancelBubble = true;
     if (e.stopPropagation) e.stopPropagation();
-    location.href = "{{=URL('default', 'form', host=True)}}/" + id
+    location.href = "{{=URL('default', 'edit', host=True)}}/" + id
   }
 </script>
 {{end}}

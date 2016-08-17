@@ -30,7 +30,7 @@ def index():
     return locals()
 
 
-def form():
+def edit():
     """
     example action using the internationalization operator T and flash
     rendered by views/default/index.html or views/generic.html
