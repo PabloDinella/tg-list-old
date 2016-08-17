@@ -27,18 +27,14 @@ def index():
     else:
         query = db.chat
     chats = db(query).select()
+
     return locals()
 
 
+@auth.requires_login()
 def edit():
     """
-    example action using the internationalization operator T and flash
-    rendered by views/default/index.html or views/generic.html
-
-    if you need a simple wiki simply replace the two lines below with:
-    return auth.wiki()
     """
-
     record = db(db.chat.id == request.args(0)).select().first()
     form = SQLFORM(db.chat,
                    record,
@@ -46,7 +42,13 @@ def edit():
                    submit_button='Enviar')
 
     if request.post_vars:
-        print request.post_vars
+        request.post_vars.updated_at = request.now
+
+    if form.accepts(request.post_vars):
+        category_slug = db.category(request.post_vars.category).slug
+        return redirect(URL('default', 'index', args=category_slug or ''))
+    elif form.errors:
+        response.flash = "Ops, houve algum problema..."
 
     return locals()
 
