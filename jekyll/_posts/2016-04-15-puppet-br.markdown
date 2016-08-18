@@ -1,7 +1,0 @@
----
-layout: post
-title:  "Puppet BR"
-categories: jekyll update
-link-telegram: https://telegram.me/puppetbr
----
-Contribuição: Guto Carvalho (@gutocarvalho)

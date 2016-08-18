@@ -1,8 +1,0 @@
----
-layout: post
-title:  "DevOps BR"
-categories: 
-link-telegram: https://telegram.me/devopsbr
----
-Contribuição: Tales Santos (@Talesteixeira)
-
