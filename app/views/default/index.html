@@ -1,6 +1,16 @@
 {{extend 'layout-home.html'}}
 
 {{block body}}
+
+{{if not chats:}}
+<div class="ui message">
+    <div class="header">Oops, nenhum grupo nessa categoria :(</div>
+    <p>
+        Se você conhece algum grupo que se encaixa nessa categoria, <a href="{{=URL('default', 'edit')}}">colabore adicionando-a aqui</a> ;)
+    </p>
+</div>
+{{pass}}
+
 <div class="thirteen wide column">
   <div class="ui three stackable doubling cards">
 
