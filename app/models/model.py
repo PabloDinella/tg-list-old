@@ -1,3 +1,9 @@
+auth.settings.extra_fields['auth_user']= [
+    Field('telegram_user', 'string'),
+]
+
+auth.define_tables(username=False, signature=False)
+
 db.define_table('category',
                 Field('name', 'string'),
                 Field('slug', 'string'),

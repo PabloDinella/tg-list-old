@@ -188,6 +188,7 @@
 'Invalid action': 'Ação inválida',
 'Invalid email': 'E-mail inválido',
 'invalid password': 'senha inválida',
+'invalid password.': 'invalid password.',
 'Invalid Query': 'Consulta inválida',
 'invalid request': 'solicitação inválida',
 'invalid ticket': 'ticket inválido',

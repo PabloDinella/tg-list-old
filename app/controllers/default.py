@@ -22,10 +22,16 @@ def index():
     """
 
     category = db(db.category.slug == request.args(0)).select().first()
+    search = db.chat.name.like('%'+request.vars.search+'%') if request.vars.search else ''
+
     if category:
         query = db.chat.category == category
     else:
         query = db.chat
+
+    if search:
+        query = search
+
     chats = db(query).select()
 
     return locals()
@@ -69,7 +75,21 @@ def user():
     to decorate functions that need access control
     also notice there is http://..../[app]/appadmin/manage/auth to allow administrator to manage users
     """
+    user = auth.login_bare(request.post_vars.email,request.post_vars.password)
+    if request.post_vars and not user:
+        response.flash = "Login inválido"
+
     return dict(form=auth())
+
+
+def signup():
+    # def onvalidation():
+        # print "entrou aqui"
+    # auth.settings.register_onvalidation.append(onvalidation)
+    db.auth_user.last_name.requires = None
+    form = auth.register()
+
+    return locals()
 
 
 @cache.action()

@@ -2,12 +2,16 @@
 
 {{block body}}
 
-<div class="ui middle aligned center aligned grid">
-  <div class="three wide column">
+<div class="ui middle aligned center aligned grid user" style="height: 100%">
+  <div class="column" style="max-width:500px">
 
-    <h2 class="ui header">Log-in to your account</h2>
+    {{if response.flash:}}
+    <div class="ui error message">
+        {{=response.flash}}
+    </div>
+    {{pass}}
 
-    <form class="ui large form">
+    <form class="ui large form" method="post">
 
       <div class="ui stacked segment">
         <div class="field">
@@ -22,16 +26,15 @@
             <input type="password" name="password" placeholder="Password">
           </div>
         </div>
-        <div class="ui fluid large teal submit button">Login</div>
+        <div class="field">
+            <button class="ui fluid large teal submit button">Login</button>
+        </div>
+        <a href="{{=URL('default','signup', vars={'_next':request.vars._next})}}">Cadastre-se</a>
       </div>
 
-      <div class="ui error message"></div>
 
     </form>
 
-    <div class="ui message">
-      New to us? <a href="#">Sign Up</a>
-    </div>
   </div>
 </div>
 

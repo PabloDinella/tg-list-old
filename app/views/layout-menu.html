@@ -10,20 +10,26 @@
 
     <div class="item">
       <div class="ui icon input">
-        <input type="text" placeholder="Buscar...">
+        <form>
+            <input type="text" name="search" placeholder="Buscar...">
+        </form>
         <i class="search link icon"></i>
       </div>
     </div>
 
 	<div class="ui dropdown item">
-	  Nome do Usuário <i class="dropdown icon"></i>
+	  {{=auth.user.first_name if auth.user else 'Minha conta'}} <i class="dropdown icon"></i>
 	  <div class="menu">
 	    <div class="item add-group"><i class="plus icon"></i>Adicionar Grupo</div>
 	    <!-- <div class="item add-channel"><i class="plus icon"></i>Adicionar Canal</div> -->
 
 		<div class="ui divider"></div>
 
-	    <div class="item"><i class="power icon"></i>Sair</div>
+        {{if not auth.user:}}
+	    <a href="{{=URL('default', 'user', args='login', vars={'_next':URL('default', 'index')})}}" class="item"><i class="sign in icon"></i>Entrar</a>
+        {{else:}}
+	    <a href="{{=URL('default', 'user', args='logout', vars={'_next':URL('default', 'index')})}}" class="item"><i class="power icon"></i>Sair</a>
+        {{pass}}
 	  </div>
 	</div>
 

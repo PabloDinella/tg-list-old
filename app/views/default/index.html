@@ -4,10 +4,18 @@
 
 {{if not chats:}}
 <div class="ui message">
+    {{if category:}}
     <div class="header">Oops, nenhum grupo nessa categoria :(</div>
     <p>
-        Se você conhece algum grupo que se encaixa nessa categoria, <a href="{{=URL('default', 'edit')}}">colabore adicionando-a aqui</a> ;)
+        Se você conhece algum grupo que se encaixa nessa categoria, <a href="{{=URL('default', 'edit')}}">colabore adicionando-o aqui</a> ;)
     </p>
+    {{pass}}
+    {{if search:}}
+    <div class="header">Oops, nenhum grupo encontrado :(</div>
+    <p>
+        Se você conhece algum grupo sobre este assunto, <a href="{{=URL('default', 'edit')}}">colabore adicionando-o aqui</a> ;)
+    </p>
+    {{pass}}
 </div>
 {{pass}}
 
