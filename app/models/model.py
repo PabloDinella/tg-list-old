@@ -20,6 +20,7 @@ db.define_table('chat',
                 Field('description', 'text'),
                 Field('image', 'upload'),
                 Field('updated_at', 'datetime', default=request.now),
+                Field('sent_by', 'reference auth_user'),
                 format=lambda r: r.name or 'anonymous')
 
 db.chat.category.requires = IS_IN_DB(
@@ -27,6 +28,7 @@ db.chat.category.requires = IS_IN_DB(
 )
 db.chat.updated_at.requires = IS_DATETIME()
 db.chat.url.requires = IS_NOT_EMPTY()
-db.chat.description.requires = IS_NOT_EMPTY()
+# db.chat.description.requires = IS_NOT_EMPTY()
+db.chat.sent_by.requires = IS_IN_DB(db, 'auth_user.id')
 
 categories = db(db.category).select(orderby=db.category.name)
