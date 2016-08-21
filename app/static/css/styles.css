@@ -1,3 +1,18 @@
-..user {
-    height: 100%;
+.user {
+  height: 100%;
+}
+
+.user .column {
+  max-width: 500px;
+}
+
+.card-add-new .content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgb(136, 136, 136);
+}
+
+.card-add-new .content:hover {
+  color: rgb(110, 110, 110);
 }
