@@ -1,0 +1,44 @@
+{{extend 'layout-login.html'}}
+
+{{block body}}
+
+<div class="ui middle aligned center aligned grid user" style="height: 100%">
+  <div class="left aligned column" style="max-width:500px">
+
+    <form class="ui large form" action="#" enctype="multipart/form-data" method="post">
+    {{widget = form.custom.widget}}
+
+      <div class="ui stacked segment">
+
+        <div class="required field">
+          <label>Senha</label>
+          <div class="ui left icon input">
+            <i class="lock icon"></i>
+            {{widget.new_password.attributes.update(_placeholder="Senha")}}
+            {{=widget.new_password}}
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="lock icon"></i>
+            {{widget.new_password2.attributes.update(_placeholder="Confirmar senha")}}
+            {{=widget.new_password2}}
+          </div>
+        </div>
+
+        <button class="ui fluid large teal submit button">Salvar senha</button>
+
+      </div>
+
+    {{=form.custom.end}}
+
+    <br>
+    <div class="ui center aligned basic segment">
+      <a href="{{=URL('default','index')}}" class="ui button">Lista Telegram</a>
+    </div>
+
+  </div>
+</div>
+
+{{end}}

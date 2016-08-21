@@ -26,14 +26,26 @@
             <input type="password" name="password" placeholder="Password">
           </div>
         </div>
-        <div class="field">
-            <button class="ui fluid large teal submit button">Login</button>
+
+        <div class="two fields">
+            <div class="field">
+              <button class="ui fluid large teal submit button">Login</button>
+            </div>
+
+            <div class="field">
+              <a href="{{=URL('default','signup', vars={'_next':request.vars._next if request.vars._next else ''})}}" class="ui fluid large button">Cadastre-se</a>
+            </div>
         </div>
-        <a href="{{=URL('default','signup', vars={'_next':request.vars._next})}}">Cadastre-se</a>
+        <a href="{{=URL('default','lost_pass')}}">Esqueci a senha</a>
       </div>
 
 
     </form>
+
+    <br>
+    <div class="ui center aligned basic segment">
+      <a href="{{=URL('default','index')}}" class="ui button">Lista Telegram</a>
+    </div>
 
   </div>
 </div>

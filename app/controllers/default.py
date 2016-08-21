@@ -49,6 +49,7 @@ def edit():
 
     if request.post_vars:
         request.post_vars.updated_at = request.now
+        request.post_vars.sent_by = auth.user.id
 
     if form.accepts(request.post_vars):
         category_slug = db.category(request.post_vars.category).slug
@@ -79,7 +80,24 @@ def user():
     if request.post_vars and not user:
         response.flash = "Login inválido"
 
+    if user and not request.vars._next:
+        return redirect(URL('default', 'index'))
+
     return dict(form=auth())
+
+
+def lost_pass():
+    # auth.messages.reset_password ='Recuperar senha: reset_password'+ '/?key='+'%(key)s'
+    auth.messages.reset_password ='Recuperar senha: ' + URL('default', 'reset_pass', vars={'key':''}, host=True) + '%(key)s'
+    form = auth.retrieve_password()
+
+    return locals()
+
+
+def reset_pass():
+    form = auth.reset_password()
+
+    return locals()
 
 
 def signup():
