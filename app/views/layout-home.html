@@ -20,10 +20,16 @@
 												todos_active = ''
 											pass
 										}}
-                    <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">Todos</a>
+                    <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">
+											Todos
+											<div class="ui label">{{=db(db.chat).count()}}</div>
+										</a>
                     {{if categories:}}
                         {{for cat in categories:}}
-                        <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">{{=cat.name}}</a>
+                        <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">
+													{{=cat.name}}
+													<div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
+												</a>
                         {{pass}}
                     {{pass}}
 				</div><!-- /secondary menu -->
