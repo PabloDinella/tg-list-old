@@ -13,7 +13,14 @@
 
 			<div class="three wide column">
 				<div class="ui secondary vertical pointing fluid menu">
-                    <a href="{{=URL('index', args='todos')}}" class="item {{='active' if request.args(0) == 'todos' else ''}}">Todos</a>
+										{{
+											if request.args(0) == 'todos' or not request.args(0):
+												todos_active = 'active'
+											else:
+												todos_active = ''
+											pass
+										}}
+                    <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">Todos</a>
                     {{if categories:}}
                         {{for cat in categories:}}
                         <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">{{=cat.name}}</a>
