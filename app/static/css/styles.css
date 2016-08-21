@@ -6,6 +6,9 @@
   max-width: 500px;
 }
 
+.card-add-new.link.card {
+  min-height: 188px;
+}
 .card-add-new .content {
   display: flex;
   justify-content: center;
