@@ -92,6 +92,24 @@ def signup():
     return locals()
 
 
+def profile():
+    db.auth_user.last_name.requires = None
+    form = auth.profile()
+
+    return locals()
+
+
+def change_password():
+    db.auth_user.last_name.requires = None
+    if request.post_vars:
+        if len(request.post_vars.new_password) < 6:
+            session.pass_too_short = "Senha muito curta"
+            redirect(URL())
+    form = auth.change_password()
+
+    return locals()
+
+
 @cache.action()
 def download():
     """

@@ -28,6 +28,8 @@
         {{if not auth.user:}}
 	    <a href="{{=URL('default', 'user', args='login', vars={'_next':URL('default', 'index')})}}" class="item"><i class="sign in icon"></i>Entrar</a>
         {{else:}}
+			<a href="{{=URL('default', 'profile')}}" class="item"><i class="user icon"></i>Perfil</a>
+			<a href="{{=URL('default', 'change_password')}}" class="item"><i class="lock icon"></i>Senha</a>
 	    <a href="{{=URL('default', 'user', args='logout', vars={'_next':URL('default', 'index')})}}" class="item"><i class="power icon"></i>Sair</a>
         {{pass}}
 	  </div>

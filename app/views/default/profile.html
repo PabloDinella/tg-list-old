@@ -1,0 +1,60 @@
+{{extend 'layout-login.html'}}
+
+{{block body}}
+
+<div class="ui middle aligned center aligned grid user" style="height: 100%">
+  <div class="left aligned column" style="max-width:500px">
+
+    <form class="ui <lar></lar>ge form" action="#" enctype="multipart/form-data" method="post">
+    {{widget = form.custom.widget}}
+
+      <div class="ui stacked segment">
+
+        <div class="left aligned field">
+          <label>Nome</label>
+          <div class="ui left icon input">
+            <i class="user icon"></i>
+            {{widget.first_name.attributes.update(_placeholder="Nome")}}
+            {{=widget.first_name}}
+          </div>
+        </div>
+
+        <div class="left aligned field">
+          <label>Sobrenome</label>
+          <div class="ui left icon input">
+            <i class="user icon"></i>
+            {{widget.last_name.attributes.update(_placeholder="Sobrenome")}}
+            {{=widget.last_name}}
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Username telegram</label>
+          <div class="ui left icon input">
+            <i class="at icon"></i>
+            {{widget.telegram_user.attributes.update(_placeholder="username")}}
+            {{=widget.telegram_user}}
+          </div>
+        </div>
+
+        <div class="required field">
+          <label>E-mail</label>
+          <div class="ui left icon input">
+            <i class="mail icon"></i>
+            {{widget.email.attributes.update(_placeholder="name@example.com")}}
+            {{=widget.email}}
+          </div>
+        </div>
+
+        <button class="ui fluid large teal submit button">Cadastrar</button>
+
+      </div>
+
+    {{=form.custom.end}}
+
+    <a href="{{=URL('default', 'index')}}">Voltar</a>
+
+  </div>
+</div>
+
+{{end}}
