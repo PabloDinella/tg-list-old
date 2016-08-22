@@ -29,7 +29,10 @@
         <div class="right floated meta edit-card" data-content="editar/atualizar info" data-variation="inverted" data-offset="-12" data-chat-id="{{=chat.id}}"><i class="edit icon link"></i></div>
         <div class="header">{{=chat.name}}</div>
         <div class="meta">
-          <span class="category">{{=chat.members}} membros</span>
+          <span class="category">
+              {{=chat.username}}
+              <i class="user icon"></i> {{=chat.members}}
+          </span>
         </div>
         <div class="description">
           <p>{{=chat.description}}</p>
@@ -37,10 +40,8 @@
       </div>
       <div class="extra content">
         <div class="left floated">
-          Atualizado há {{=(request.now - chat.updated_at).days}} dias
-        </div>
-        <div class="right floated author">
-          {{=chat.username}}
+          {{sent_by = db.auth_user(chat.sent_by)}}
+          Enviado por {{=sent_by.telegram_user or sent_by.first_name}} a {{=(request.now - chat.updated_at).days}} dia(s)
         </div>
       </div>
       <a class="ui bottom attached button" href="{{=chat.url}}" target="_blank">
