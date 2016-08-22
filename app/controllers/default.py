@@ -55,6 +55,7 @@ def edit():
             request.post_vars.sent_by = record.sent_by
 
     if form.accepts(request.post_vars):
+        db.history.insert(who=auth.user.id, chat=form.vars.id)
         category_slug = db.category(request.post_vars.category).slug
         return redirect(URL('default', 'index', args=category_slug or ''))
     elif form.errors:

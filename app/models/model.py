@@ -28,7 +28,13 @@ db.chat.category.requires = IS_IN_DB(
 )
 db.chat.updated_at.requires = IS_DATETIME()
 db.chat.url.requires = IS_NOT_EMPTY()
-# db.chat.description.requires = IS_NOT_EMPTY()
 db.chat.sent_by.requires = IS_IN_DB(db, 'auth_user.id')
+
+db.define_table(
+    'history',
+    Field('who', 'reference auth_user'),
+    Field('chat', 'reference chat'),
+    Field('updated_at', 'datetime', default=request.now)
+    )
 
 categories = db(db.category).select(orderby=db.category.name)
