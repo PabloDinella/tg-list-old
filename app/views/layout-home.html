@@ -13,23 +13,17 @@
 
 			<div class="three wide column">
 				<div class="ui secondary vertical pointing fluid menu">
-										{{
-											if request.args(0) == 'todos' or not request.args(0):
-												todos_active = 'active'
-											else:
-												todos_active = ''
-											pass
-										}}
+                    {{todos_active = 'active' if request.args(0) == 'todos' or not request.args(0) else ''}}
                     <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">
-											Todos
-											<div class="ui label">{{=db(db.chat).count()}}</div>
-										</a>
+						Todos
+						<div class="ui label">{{=db(db.chat).count()}}</div>
+					</a>
                     {{if categories:}}
                         {{for cat in categories:}}
                         <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">
-													{{=cat.name}}
-													<div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
-												</a>
+							{{=cat.name}}
+							<div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
+						</a>
                         {{pass}}
                     {{pass}}
 				</div><!-- /secondary menu -->
