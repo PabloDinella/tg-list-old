@@ -64,10 +64,12 @@
 
 {{block script}}
 <script>
-  $('.edit-card').on('click', function () {
+  $('.edit-card').on('click', function (e) {
     var id = $(this).data('chat-id');
     link = '{{=URL('default', 'edit', host=True)}}/' + id;
-    window.open(link, '_blank');
+    location.href = link
+    e.stopPropagation();
+    // window.open(link, '_blank');
   })
 
   $('.link.card').on('click', function () {
