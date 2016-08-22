@@ -49,7 +49,10 @@ def edit():
 
     if request.post_vars:
         request.post_vars.updated_at = request.now
-        request.post_vars.sent_by = auth.user.id
+        if not record:
+            request.post_vars.sent_by = auth.user.id
+        else:
+            request.post_vars.sent_by = record.sent_by
 
     if form.accepts(request.post_vars):
         category_slug = db.category(request.post_vars.category).slug
