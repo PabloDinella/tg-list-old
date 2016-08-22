@@ -49,10 +49,7 @@ def edit():
 
     if request.post_vars:
         request.post_vars.updated_at = request.now
-        if not record:
-            request.post_vars.sent_by = auth.user.id
-        else:
-            request.post_vars.sent_by = record.sent_by
+        request.post_vars.sent_by = auth.user.id if not record else record.sent_by
 
     if form.accepts(request.post_vars):
         db.history.insert(who=auth.user.id, chat=form.vars.id)
