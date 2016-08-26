@@ -2,63 +2,63 @@
 
 {{block content}}
 
-	<div class="ui container">
-		<br>
-        {{include 'layout-menu.html'}}
+<div class="ui container">
+  <br>
+  {{include 'layout-menu.html'}}
 
-		<div class="ui divider"></div>
-		<br>
+  <div class="ui divider"></div>
+  <br>
 
-		<div class="ui stackable grid">
+  <div class="ui stackable grid">
 
-			<div class="three wide column">
-				<div class="ui secondary vertical fluid menu">
-                    {{todos_active = 'active' if request.args(0) == 'todos' or not request.args(0) else ''}}
-                    <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">
-						Todos
-						<div class="ui label">{{=db(db.chat).count()}}</div>
-					</a>
-                    {{if categories:}}
-                        {{for cat in categories:}}
-                        <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">
-							{{=cat.name}}
-							<div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
-						</a>
-                        {{pass}}
-                    {{pass}}
-				</div><!-- /secondary menu -->
-                <hr>
-				<div class="ui vertical text menu">
-                    <a href="https://github.com/PabloDinella/tg-list" class="item" target="_blank"><i class="github icon"></i> GitHub</a>
-                    <a href="http://www.web2py.com/" class="item" target="_blank">Feito com web2py</a>
-				</div><!-- /secondary menu -->
-			</div>
+    <div class="four wide column">
+      <div class="ui vertical fluid menu">
+        {{todos_active = 'active' if request.args(0) == 'todos' or not request.args(0) else ''}}
+        <a href="{{=URL('index', args='todos')}}" class="item {{=todos_active}}">
+          Todos
+          <div class="ui label">{{=db(db.chat).count()}}</div>
+        </a>
+        {{if categories:}}
+          {{for cat in categories:}}
+            <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">
+              {{=cat.name}}
+              <div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
+            </a>
+          {{pass}}
+        {{pass}}
+      </div><!-- /secondary menu -->
+      <hr>
+      <div class="ui vertical text menu">
+        <a href="https://github.com/PabloDinella/tg-list" class="item" target="_blank"><i class="github icon"></i> GitHub</a>
+        <a href="http://www.web2py.com/" class="item" target="_blank">Feito com web2py</a>
+      </div><!-- /secondary menu -->
+    </div>
 
-            <div class="thirteen wide column">
-                {{if response.flash:}}
-                <div class="ui message transition">
-                  <i class="close icon"></i>
-                  <div class="header">
-                    {{=response.flash}}
-                  </div>
-                </div>
-                {{pass}}
+    <div class="twelve wide column">
+      {{if response.flash:}}
+        <div class="ui message transition">
+          <i class="close icon"></i>
+          <div class="header">
+            {{=response.flash}}
+          </div>
+        </div>
+      {{pass}}
 
-    			{{block body}}
-                {{end}}
-            </div>
+      {{block body}}
+      {{end}}
+    </div>
 
-		</div>
+  </div>
 
-	</div>
+</div>
 
-  <script src="{{=URL('static', 'js/semantic-start.js')}}" charset="utf-8"></script>
-  <script>
-      $('.add-group').on('click', function () {
-          location.href = '{{=URL('default', 'edit')}}'
-      })
-  </script>
-  {{block script}}
-  {{end}}
+<script src="{{=URL('static', 'js/semantic-start.js')}}" charset="utf-8"></script>
+<script>
+  $('.add-group').on('click', function () {
+    location.href = '{{=URL('default', 'edit')}}'
+  })
+</script>
+{{block script}}
+{{end script}}
 
-{{end}}
+{{end content}}
