@@ -1,6 +1,13 @@
 auth.settings.extra_fields['auth_user']= [
-    Field('telegram_user', 'string'),
+    Field(
+        'telegram_user',
+        'string',
+        requires=ANY_OF(
+            [IS_ALPHANUMERIC(), IS_IN_SET(['_'])]
+        )
+    )
 ]
+# db.auth_user.telegram_user.requires = ANY_OF([IS_ALPHANUMERIC(),IS_IN_SET(['_'])])
 
 auth.define_tables(username=False, signature=False)
 
