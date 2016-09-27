@@ -7,7 +7,6 @@ auth.settings.extra_fields['auth_user']= [
         )
     )
 ]
-# db.auth_user.telegram_user.requires = ANY_OF([IS_ALPHANUMERIC(),IS_IN_SET(['_'])])
 
 auth.define_tables(username=False, signature=False)
 
@@ -17,10 +16,15 @@ db.define_table('category',
                 Field('parent', 'reference category'),
                 format=lambda r: r.name or 'anonymous')
 
+db.define_table(
+    'kind',
+    Field('name', 'string')
+)
 
 db.define_table('chat',
                 Field('name', 'string'),
                 Field('username', 'string'),
+                Field('kind', db.kind),
                 Field('members', 'integer'),
                 Field('url', 'string'),
                 Field('category', db.category),
