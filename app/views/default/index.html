@@ -9,11 +9,15 @@
     <p>
         Se você conhece algum grupo que se encaixa nessa categoria, <a href="{{=URL('default', 'edit')}}">colabore adicionando-o aqui</a> ;)
     </p>
-    {{pass}}
-    {{if search:}}
+    {{elif search:}}
     <div class="header">Oops, nenhum grupo encontrado :(</div>
     <p>
         Se você conhece algum grupo sobre este assunto, <a href="{{=URL('default', 'edit')}}">colabore adicionando-o aqui</a> ;)
+    </p>
+    {{else:}}
+    <div class="header">Oops, nenhum grupo encontrado :(</div>
+    <p>
+        Colabore <a href="{{=URL('default', 'edit')}}">adicionando um grupo que você conheça</a> ;)
     </p>
     {{pass}}
 </div>

@@ -3,10 +3,9 @@ app/private/
 app/sessions/
 app/databases/
 web2py/applications/welcome
-web2py/paramaters_8000.py
 *.pyc
 *.log
 */*/*/sessions/
 *.pid
 */parameters_8080.py
-
+*/parameters_8000.py
