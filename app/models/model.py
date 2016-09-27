@@ -23,6 +23,7 @@ db.define_table('chat',
                 Field('sent_by', 'reference auth_user'),
                 format=lambda r: r.name or 'anonymous')
 
+db.chat.username.requires = ANY_OF([IS_ALPHANUMERIC(),IS_IN_SET(['_'])])
 db.chat.category.requires = IS_IN_DB(
     db, 'category.id', '%(name)s', zero=T('Escolha uma categoria')
 )

@@ -16,11 +16,14 @@
       </div>
       <div class="field">
         <label>Username</label>
-        {{form.custom.widget.username.attributes.update(
-            _class='',
-            _placeholder='@username',
-        )}}
-        {{=form.custom.widget.username}}
+        <div class="ui left icon input">
+          <i class="at icon"></i>
+          {{form.custom.widget.username.attributes.update(
+              _class='',
+              _placeholder='username',
+          )}}
+          {{=form.custom.widget.username}}
+        </div>
       </div>
       <div class="field">
         <label>Quantidade de membros</label>
