@@ -2,6 +2,13 @@
 
 {{block body}}
 
+<div class="ui piled segment">
+  <h4>Este é um agregador de grupos do <a href="https://telegram.org/">Telegram</a> sobre assuntos digitais!</h4>
+  <p>Estamos em fase inicial, mas logo logo você também poderá <strong>marcar grupos como favoritos</strong>, adicionar também <strong>canais e bots</strong>, e acessar o site do celular (<strong>layout responsivo</strong>).</p>
+  <p>Este é um projeto <a href="https://github.com/PabloDinella/tg-list">open source</a> :)</p>
+  <a href="{{=URL('default', 'edit')}}" class="ui button">Adicione um grupo</a>
+</div>
+
 {{if not chats:}}
 <div class="ui message">
     {{if category:}}
