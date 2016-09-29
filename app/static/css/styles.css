@@ -19,3 +19,11 @@
 .card-add-new .content:hover {
   color: rgb(110, 110, 110);
 }
+
+.grupos-ti {
+  color: rgb(139, 139, 139) !important;
+}
+
+.grupos-ti > strong {
+  color: #f2711c;
+}
