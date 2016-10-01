@@ -20,12 +20,20 @@
         </a>
         {{if categories:}}
           {{for cat in categories:}}
-            <a href="{{=URL('index', args=cat.slug)}}" class="item {{='active' if request.args(0) == cat.slug else ''}}">
+            <a href="{{=URL('index', args=cat.slug)}}" class="header item {{='active' if request.args(0) == cat.slug else ''}}">
               {{=cat.name}}
               <div class="ui label">{{=db(db.chat.category == cat.id).count()}}</div>
             </a>
+            {{subcategories = db(db.category.parent == cat.id).select()}}
+            {{for subcat in subcategories:}}
+              <a href="{{=URL('index', args=subcat.slug)}}" class="item {{='active' if request.args(0) == subcat.slug else ''}}">
+                {{=subcat.name}}
+                <div class="ui label">{{=db(db.chat.category == subcat.id).count()}}</div>
+              </a>
+            {{pass}}
           {{pass}}
         {{pass}}
+
         <a href="https://telegram.me/grupos_ti" class="item active grupos-ti"><strong>@grupos_ti</strong> - Canal</a>
       </div><!-- /secondary menu -->
       <hr>

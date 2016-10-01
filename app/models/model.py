@@ -49,4 +49,4 @@ db.define_table(
     Field('updated_at', 'datetime', default=request.now)
     )
 
-categories = db(db.category).select(orderby=db.category.name)
+categories = db(db.category)(db.category.parent == None).select(orderby=db.category.name)
