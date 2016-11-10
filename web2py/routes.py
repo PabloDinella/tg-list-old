@@ -30,7 +30,7 @@ default_function = 'index'      # ordinarily set in app-specific routes.py
 #   routes_in=( (r'/static/(?P<file>[\w./-]+)', r'/init/static/\g<file>') )
 #
 
-# BASE = ''  # optonal prefix for incoming URLs
+BASE = ''  # optonal prefix for incoming URLs
 #
 # routes_in = (
 #     # do not reroute admin unless you want to disable it
@@ -49,6 +49,11 @@ default_function = 'index'      # ordinarily set in app-specific routes.py
 #     # remove the BASE prefix
 #     (BASE + '/$anything', '/$anything'),
 # )
+
+routes_in = (
+    (BASE + '/api', '/app/default/api'),
+    (BASE + '/api/$anything', '/app/default/api/$anything'),
+)
 
 # routes_out, like routes_in translates URL paths created with the web2py URL()
 # function in the same manner that route_in translates inbound URL paths.
