@@ -9,4 +9,4 @@ web2py/applications/welcome
 *.pid
 */parameters_8080.py
 */parameters_8000.py
-tags/
+tags
