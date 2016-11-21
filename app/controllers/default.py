@@ -133,7 +133,13 @@ def change_password():
 def api():
     response.view = 'generic.'+request.extension
     def GET(*args,**vars):
-        patterns = 'auto'
+        # patterns = 'auto'
+        patterns = [
+            '/chats[chat]',
+            '/chat/{chat.name.startswith}',
+            '/chat/{chat.username}',
+            '/chats/{chat.id}',
+        ]
         parser = db.parse_as_rest(patterns,args,vars)
         if parser.status == 200:
             return dict(content=parser.response)

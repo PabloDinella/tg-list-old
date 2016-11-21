@@ -8,5 +8,5 @@ web2py/applications/welcome
 */*/*/sessions/
 *.pid
 */parameters_8080.py
-*/parameters_8000.py
+web2py/parameters_8000.py
 tags
