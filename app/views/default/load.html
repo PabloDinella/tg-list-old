@@ -1,0 +1,11 @@
+{{extend 'layout-home.html'}}
+
+{{block body}}
+  <table>
+  {{for chat in data:}}
+  <tr>
+    <td>{{=chat}}</td>
+  </tr>
+  {{pass}}
+  </table>
+{{end}}

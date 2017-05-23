@@ -36,6 +36,24 @@ def index():
 
     return locals()
 
+def load():
+    import json
+    from pprint import pprint
+    import re
+    import os
+    filepath = os.path.join(request.folder,'uploads','chats.json')
+
+    with open(filepath) as data_file:
+        data = json.load(data_file)
+
+    chats = []
+
+    for chat in data:
+        print "- - - - >", re.search('http[^\s]*', chat).group()
+
+    # pprint(data)
+    return locals()
+
 
 @auth.requires_login()
 def edit():
