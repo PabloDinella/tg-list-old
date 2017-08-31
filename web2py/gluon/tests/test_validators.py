@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Unit tests for http.py """
@@ -7,15 +7,16 @@ import unittest
 import datetime
 import decimal
 import re
-from fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 
 from gluon.validators import *
-
+from gluon._compat import PY2, to_bytes
 
 class TestValidators(unittest.TestCase):
+
+    def myassertRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRegexpMatches')(*args, **kwargs)
+        return getattr(self, 'assertRegex')(*args, **kwargs)
 
     def test_MISC(self):
         """ Test miscelaneous utility functions and some general behavior guarantees """
@@ -30,17 +31,6 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(utc.utcoffset(dt), UTC.ZERO)
         self.assertEqual(utc.dst(dt), UTC.ZERO)
         self.assertEqual(utc.tzname(dt), 'UTC')
-
-    # port from python 2.7, needed for 2.5 and 2.6 tests
-    def assertRegexpMatches(self, text, expected_regexp, msg=None):
-        """Fail the test unless the text matches the regular expression."""
-        if isinstance(expected_regexp, basestring):
-            expected_regexp = re.compile(expected_regexp)
-        if not expected_regexp.search(text):
-            msg = msg or "Regexp didn't match"
-            msg = '%s: %r not found in %r' % (
-                msg, expected_regexp.pattern, text)
-            raise self.failureException(msg)
 
     def test_IS_MATCH(self):
         rtn = IS_MATCH('.+')('hello')
@@ -66,7 +56,10 @@ class TestValidators(unittest.TestCase):
         rtn = IS_MATCH('^.hell$', strict=True)('shell')
         self.assertEqual(rtn, ('shell', None))
         rtn = IS_MATCH(u'hell', is_unicode=True)('àòè')
-        self.assertEqual(rtn, ('\xc3\xa0\xc3\xb2\xc3\xa8', 'Invalid expression'))
+        if PY2:
+            self.assertEqual(rtn, ('\xc3\xa0\xc3\xb2\xc3\xa8', 'Invalid expression'))
+        else:
+            self.assertEqual(rtn, ('àòè', 'Invalid expression'))
         rtn = IS_MATCH(u'hell', is_unicode=True)(u'hell')
         self.assertEqual(rtn, (u'hell', None))
         rtn = IS_MATCH('hell', is_unicode=True)(u'hell')
@@ -122,9 +115,15 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (cpstr, 'Enter from 0 to 3 characters'))
         # test unicode
         rtn = IS_LENGTH(2)(u'°2')
-        self.assertEqual(rtn, ('\xc2\xb02', None))
+        if PY2:
+            self.assertEqual(rtn, ('\xc2\xb02', None))
+        else:
+            self.assertEqual(rtn, (u'°2', None))
         rtn = IS_LENGTH(2)(u'°12')
-        self.assertEqual(rtn, (u'\xb012', 'Enter from 0 to 2 characters'))
+        if PY2:
+            self.assertEqual(rtn, (u'\xb012', 'Enter from 0 to 2 characters'))
+        else:
+            self.assertEqual(rtn, (u'°12', 'Enter from 0 to 2 characters'))
         # test automatic str()
         rtn = IS_LENGTH(minsize=1)(1)
         self.assertEqual(rtn, ('1', None))
@@ -132,19 +131,19 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (1, 'Enter from 2 to 255 characters'))
         # test FieldStorage
         import cgi
-        from StringIO import StringIO
+        from io import BytesIO
         a = cgi.FieldStorage()
-        a.file = StringIO('abc')
+        a.file = BytesIO(b'abc')
         rtn = IS_LENGTH(minsize=4)(a)
         self.assertEqual(rtn, (a, 'Enter from 4 to 255 characters'))
-        urlencode_data = "key2=value2x&key3=value3&key4=value4"
+        urlencode_data = b"key2=value2x&key3=value3&key4=value4"
         urlencode_environ = {
             'CONTENT_LENGTH':   str(len(urlencode_data)),
             'CONTENT_TYPE':     'application/x-www-form-urlencoded',
             'QUERY_STRING':     'key1=value1&key2=value2y',
             'REQUEST_METHOD':   'POST',
         }
-        fake_stdin = StringIO(urlencode_data)
+        fake_stdin = BytesIO(urlencode_data)
         fake_stdin.seek(0)
         a = cgi.FieldStorage(fp=fake_stdin, environ=urlencode_environ)
         rtn = IS_LENGTH(minsize=6)(a)
@@ -236,6 +235,11 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test None
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
         # Test using the set it made for options
         vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
         vldtr.options()
@@ -435,21 +439,21 @@ class TestValidators(unittest.TestCase):
         rtn = IS_NOT_EMPTY()('x')
         self.assertEqual(rtn, ('x', None))
         rtn = IS_NOT_EMPTY()(' x ')
-        self.assertEqual(rtn, ('x', None))
+        self.assertEqual(rtn, (' x ', None))
         rtn = IS_NOT_EMPTY()(None)
         self.assertEqual(rtn, (None, 'Enter a value'))
         rtn = IS_NOT_EMPTY()('')
         self.assertEqual(rtn, ('', 'Enter a value'))
         rtn = IS_NOT_EMPTY()('  ')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('  ', 'Enter a value'))
         rtn = IS_NOT_EMPTY()(' \n\t')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, (' \n\t', 'Enter a value'))
         rtn = IS_NOT_EMPTY()([])
         self.assertEqual(rtn, ([], 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('def')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('def', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='de[fg]')('deg')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('deg', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('abc')
         self.assertEqual(rtn, ('abc', None))
 
@@ -531,6 +535,11 @@ class TestValidators(unittest.TestCase):
         # test for not a string at all
         rtn = IS_EMAIL(error_message='oops')(42)
         self.assertEqual(rtn, (42, 'oops'))
+
+        # test for Internationalized Domain Names, see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+        rtn = IS_EMAIL()('web2py@Alliancefrançaise.nu')
+        self.assertEqual(rtn, ('web2py@Alliancefrançaise.nu', None))
+
 
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
@@ -704,14 +713,18 @@ class TestValidators(unittest.TestCase):
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
         self.assertEqual(rtn, ('abc', None))
+        rtn = IS_LOWER()(b'ABC')
+        self.assertEqual(rtn, (b'abc', None))
         rtn = IS_LOWER()('Ñ')
-        self.assertEqual(rtn, ('\xc3\xb1', None))
+        self.assertEqual(rtn, ('ñ', None))
 
     def test_IS_UPPER(self):
         rtn = IS_UPPER()('abc')
         self.assertEqual(rtn, ('ABC', None))
+        rtn = IS_UPPER()(b'abc')
+        self.assertEqual(rtn, (b'ABC', None))
         rtn = IS_UPPER()('ñ')
-        self.assertEqual(rtn, ('\xc3\x91', None))
+        self.assertEqual(rtn, ('Ñ', None))
 
     def test_IS_SLUG(self):
         rtn = IS_SLUG()('abc123')
@@ -781,7 +794,7 @@ class TestValidators(unittest.TestCase):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_EMAIL())(' abc ')
-        self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
+        self.assertEqual(rtn, (' abc ', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options(zero=False)
         self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
@@ -793,20 +806,20 @@ class TestValidators(unittest.TestCase):
 
     def test_CRYPT(self):
         rtn = str(CRYPT(digest_alg='md5', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         rtn = str(CRYPT(digest_alg='sha1', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha1\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^sha1\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='sha256', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha256\$.{16}\$.{64}$')
+        self.myassertRegex(rtn, r'^sha256\$.{16}\$.{64}$')
         rtn = str(CRYPT(digest_alg='sha384', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha384\$.{16}\$.{96}$')
+        self.myassertRegex(rtn, r'^sha384\$.{16}\$.{96}$')
         rtn = str(CRYPT(digest_alg='sha512', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha512\$.{16}\$.{128}$')
+        self.myassertRegex(rtn, r'^sha512\$.{16}\$.{128}$')
         alg = 'pbkdf2(1000,20,sha512)'
         rtn = str(CRYPT(digest_alg=alg, salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='md5', key='mykey', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         a = str(CRYPT(digest_alg='sha1', salt=False)('test')[0])
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a)
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a[6:])
@@ -832,7 +845,10 @@ class TestValidators(unittest.TestCase):
         rtn = IS_STRONG(es=True, entropy=100)('a1d')
         self.assertEqual(rtn, ('a1d', 'Entropy (15.97) less than required (100)'))
         rtn = IS_STRONG(es=True, entropy=100)('añd')
-        self.assertEqual(rtn, ('a\xc3\xb1d', 'Entropy (18.13) less than required (100)'))
+        if PY2:
+            self.assertEqual(rtn, ('a\xc3\xb1d', 'Entropy (18.13) less than required (100)'))
+        else:
+            self.assertEqual(rtn, ('añd', 'Entropy (18.13) less than required (100)'))
         rtn = IS_STRONG()('********')
         self.assertEqual(rtn, ('********', None))
         rtn = IS_STRONG(es=True, max=4)('abcde')
@@ -841,7 +857,7 @@ class TestValidators(unittest.TestCase):
                           '|'.join(['Minimum length is 8',
                                     'Maximum length is 4',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(es=True)('abcde')
@@ -849,7 +865,7 @@ class TestValidators(unittest.TestCase):
                          ('abcde',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
@@ -857,8 +873,8 @@ class TestValidators(unittest.TestCase):
                          ('Abcde1',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'May not include any upper case letters',
-                                    'May not include any lower case letters',
+                                    'May not include any uppercase letters',
+                                    'May not include any lowercase letters',
                                     'May not include any numbers']))
                          )
 
@@ -866,10 +882,10 @@ class TestValidators(unittest.TestCase):
         class DummyImageFile(object):
 
             def __init__(self, filename, ext, width, height):
-                from StringIO import StringIO
+                from io import BytesIO
                 import struct
                 self.filename = filename + '.' + ext
-                self.file = StringIO()
+                self.file = BytesIO()
                 if ext == 'bmp':
                     self.file.write(b'BM')
                     self.file.write(b' ' * 16)
@@ -926,7 +942,7 @@ class TestValidators(unittest.TestCase):
 
     def test_IS_UPLOAD_FILENAME(self):
         import cgi
-        from StringIO import StringIO
+        from io import BytesIO
 
         def gen_fake(filename):
             formdata_file_data = """
@@ -948,7 +964,7 @@ this is the content of the fake file
                 'QUERY_STRING':     'key1=value1&key2=value2x',
                 'REQUEST_METHOD':   'POST',
             }
-            return cgi.FieldStorage(fp=StringIO(formdata_file_data), environ=formdata_file_environ)['file_attach']
+            return cgi.FieldStorage(fp=BytesIO(to_bytes(formdata_file_data)), environ=formdata_file_environ)['file_attach']
 
         fake = gen_fake('example.pdf')
         rtn = IS_UPLOAD_FILENAME(extension='pdf')(fake)
@@ -1027,7 +1043,10 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(is_multicast=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', None))
-        rtn = IS_IPV6(is_routeable=True)('2001::126c:8ffa:fe22:b3af')
+        # with py3.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
+        # with py2.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
+        # with gluon.contrib.ipaddr(both current and trunk) is not considered private
+        rtn = IS_IPV6(is_routeable=False)('2001::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
         rtn = IS_IPV6(is_routeable=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
@@ -1102,8 +1121,6 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', 'Enter valid IP address'))
         rtn = IS_IPADDRESS(is_multicast=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', None))
-        rtn = IS_IPADDRESS(is_routeable=True)('2001::126c:8ffa:fe22:b3af')
-        self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(is_routeable=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', 'Enter valid IP address'))
         rtn = IS_IPADDRESS(subnets='2001::/32')('2001::8ffa:fe22:b3af')
@@ -1114,7 +1131,3 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'invalid subnet provided'))
-
-
-if __name__ == '__main__':
-    unittest.main()

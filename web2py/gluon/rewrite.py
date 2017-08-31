@@ -15,6 +15,7 @@ routes.py supports two styles of URL rewriting, depending on whether 'routers' i
 Refer to router.example.py and routes.example.py for additional documentation.
 
 """
+from __future__ import print_function
 
 import os
 import re
@@ -26,6 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
+from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -79,7 +81,7 @@ def _router_default():
         #  pathological backtracking from nested patterns.
         #
         file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
-        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
+        args_match=r'([\w@ =-]|(?<=[\w@ -])[.])*$',
     )
     return router
 
@@ -117,7 +119,7 @@ def log_rewrite(string):
     elif params.logging == 'off' or not params.logging:
         pass
     elif params.logging == 'print':
-        print string
+        print(string)
     elif params.logging == 'info':
         logger.info(string)
     elif params.logging == 'warning':
@@ -204,8 +206,7 @@ def url_out(request, environ, application, controller, function,
     if host is True or (host is None and (scheme or port is not None)):
         host = request.env.http_host
     if not scheme or scheme is True:
-        scheme = request.env.get('wsgi_url_scheme', 'http').lower() \
-            if request else 'http'
+        scheme = request.env.get('wsgi_url_scheme', 'http').lower() if request else 'http'
     if host:
         host_port = host if not port else host.split(':', 1)[0] + ':%s' % port
         url = '%s://%s%s' % (scheme, host_port, url)
@@ -315,8 +316,8 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
         symbols = dict(app=app)
         try:
-            exec (data + '\n') in symbols
-        except SyntaxError, e:
+            exec(data, symbols)
+        except SyntaxError as e:
             logger.error(
                 '%s has a syntax error and will not be loaded\n' % path
                 + traceback.format_exc())
@@ -512,7 +513,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (d, a) in routers.BASE.domains.iteritems():
+        for (d, a) in iteritems(routers.BASE.domains):
             (domain, app) = (d.strip(':'), a.strip('/'))
             if ':' in domain:
                 (domain, port) = domain.split(':')
@@ -618,13 +619,13 @@ def regex_url_in(request, environ):
     if routes.routes_in:
         environ = regex_filter_in(environ)
     request.env.update(
-        (k.lower().replace('.', '_'), v) for k, v in environ.iteritems())
+        (k.lower().replace('.', '_'), v) for k, v in iteritems(environ))
 
     # ##################################################
     # serve if a static file
     # ##################################################
 
-    path = urllib.unquote(request.env.path_info) or '/'
+    path = urllib_unquote(request.env.path_info) or '/'
     path = path.replace('\\', '/')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
@@ -636,9 +637,10 @@ def regex_url_in(request, environ):
         request.raw_args = request.raw_args[1:]
     if match.group('c') == 'static':
         application = match.group('a')
-        version, filename = None, match.group('z').replace(' ', '_')
+        version, filename = None, match.group('z')
         if not filename:
             raise HTTP(404)
+        filename = filename.replace(' ','_')
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
@@ -714,7 +716,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
     if isinstance(domain, str):
         domain = (domain, None)
     (path_info, query_string) = (uri[:k], uri[k + 1:])
-    path_info = urllib.unquote(path_info)   # simulate server
+    path_info = urllib_unquote(path_info)   # simulate server
     e = {
         'REMOTE_ADDR': remote,
         'REQUEST_METHOD': method,
@@ -1037,7 +1039,7 @@ class MapUrlIn(object):
         else:
             default_function = self.router.default_function  # str or None
         default_function = self.domain_function or default_function
-        if not arg0 or functions and arg0 not in functions:
+        if not arg0 or functions and arg0.split('.')[0] not in functions:
             self.function = default_function or ""
             self.pop_arg_if(arg0 and self.function == arg0)
         else:
@@ -1072,7 +1074,7 @@ class MapUrlIn(object):
 
     def sluggify(self):
         self.request.env.update(
-            (k.lower().replace('.', '_'), v) for k, v in self.env.iteritems())
+            (k.lower().replace('.', '_'), v) for k, v in iteritems(self.env))
 
     def update_request(self):
         """
@@ -1099,7 +1101,7 @@ class MapUrlIn(object):
         uri = '/%s%s%s%s' % (
             app,
             uri,
-            urllib.quote('/' + '/'.join(
+            urllib_quote('/' + '/'.join(
                 str(x) for x in self.args)) if self.args else '',
             ('?' + self.query) if self.query else '')
         self.env['REQUEST_URI'] = uri

@@ -13,10 +13,10 @@ Contains the classes for the global used variables:
 - Session
 
 """
-
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
+    unicodeT, long, hashlib_md5, urllib_quote
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
-from gluon.xmlrpc import handler
 from gluon.contenttype import contenttype
 from gluon.html import xmlescape, TABLE, TR, PRE, URL
 from gluon.http import HTTP, redirect
@@ -29,26 +29,19 @@ from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.fileutils import copystream
 import hashlib
-import portalocker
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from pydal.contrib import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
-from types import DictionaryType
-import cStringIO
+# from types import DictionaryType
 import datetime
 import re
-import copy_reg
-import Cookie
 import os
 import sys
 import traceback
 import threading
 import cgi
-import urlparse
 import copy
 import tempfile
+import json as json_parser
 
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
@@ -56,18 +49,12 @@ PAST = 'Sat, 1-Jan-1971 00:00:00'
 FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
 try:
+    # FIXME PY3
     from gluon.contrib.minify import minify
     have_minify = True
 except ImportError:
     have_minify = False
 
-try:
-    import simplejson as sj  # external installed library
-except:
-    try:
-        import json as sj  # standard installed library
-    except:
-        import gluon.contrib.simplejson as sj  # pure python library
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 
@@ -93,6 +80,7 @@ template_mapping = {
     'js:inline': js_inline
 }
 
+
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
@@ -102,12 +90,16 @@ class SortingPickler(Pickler):
         self.memoize(obj)
         self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
-SortingPickler.dispatch = copy.copy(Pickler.dispatch)
-SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
+if PY2:
+    SortingPickler.dispatch = copy.copy(Pickler.dispatch)
+    SortingPickler.dispatch[dict] = SortingPickler.save_dict
+else:
+    SortingPickler.dispatch_table = copyreg.dispatch_table.copy()
+    SortingPickler.dispatch_table[dict] = SortingPickler.save_dict
 
 
 def sorting_dumps(obj, protocol=None):
-    file = cStringIO.StringIO()
+    file = StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
 # END #####################################################################
@@ -121,7 +113,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
     """
     env = request.env
     if not env.get('CONTENT_LENGTH', None):
-        return cStringIO.StringIO()
+        return StringIO()
     source = env['wsgi.input']
     try:
         size = int(env['CONTENT_LENGTH'])
@@ -131,7 +123,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
         dest = tempfile.NamedTemporaryFile()
     except NotImplementedError:  # and GAE this
         dest = tempfile.TemporaryFile()
-    if not 'X-Progress-ID' in request.get_vars:
+    if 'X-Progress-ID' not in request.get_vars:
         copystream(source, dest, size, chunk_size)
         return dest
     cache_key = 'X-Progress-ID:' + request.get_vars['X-Progress-ID']
@@ -209,9 +201,10 @@ class Request(Storage):
         """Takes the QUERY_STRING and unpacks it to get_vars
         """
         query_string = self.env.get('query_string', '')
-        dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
+        dget = urlparse.parse_qs(query_string, keep_blank_values=1)
+        # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
-        for (key, value) in get_vars.iteritems():
+        for (key, value) in iteritems(get_vars):
             if isinstance(value, list) and len(value) == 1:
                 get_vars[key] = value[0]
 
@@ -227,7 +220,7 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = sj.load(body)
+                json_vars = json_parser.load(body)
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
@@ -239,8 +232,7 @@ class Request(Storage):
             body.seek(0)
 
         # parse POST variables on POST, PUT, BOTH only in post_vars
-        if (body and not is_json
-            and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
+        if body and not is_json and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH'):
             query_string = env.pop('QUERY_STRING', None)
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             try:
@@ -285,7 +277,7 @@ class Request(Storage):
         """Merges get_vars and post_vars to vars
         """
         self._vars = copy.copy(self.get_vars)
-        for key, value in self.post_vars.iteritems():
+        for key, value in iteritems(self.post_vars):
             if key not in self._vars:
                 self._vars[key] = value
             else:
@@ -361,14 +353,14 @@ class Request(Storage):
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
-    def restful(self):
+    def restful(self, ignore_extension=False):
         def wrapper(action, request=self):
             def f(_action=action, *a, **b):
                 request.is_restful = True
                 env = request.env
-                is_json = env.content_type=='application/json'
+                is_json = env.content_type == 'application/json'
                 method = env.request_method
-                if len(request.args) and '.' in request.args[-1]:
+                if not ignore_extension and len(request.args) and '.' in request.args[-1]:
                     request.args[-1], _, request.extension = request.args[-1].rpartition('.')
                     current.response.headers['Content-Type'] = \
                         contenttype('.' + request.extension.lower())
@@ -381,7 +373,7 @@ class Request(Storage):
                     if is_json and not isinstance(res, str):
                         res = json(res)
                     return res
-                except TypeError, e:
+                except TypeError as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
                         raise HTTP(400, "invalid arguments")
@@ -405,7 +397,7 @@ class Response(Storage):
         self.status = 200
         self.headers = dict()
         self.headers['X-Powered-By'] = 'web2py'
-        self.body = cStringIO.StringIO()
+        self.body = StringIO()
         self.session_id = None
         self.cookies = Cookie.SimpleCookie()
         self.postprocessing = []
@@ -427,10 +419,10 @@ class Response(Storage):
         if not escape:
             self.body.write(str(data))
         else:
-            self.body.write(xmlescape(data))
+            self.body.write(to_native(xmlescape(data)))
 
     def render(self, *a, **b):
-        from compileapp import run_view_in
+        from gluon.compileapp import run_view_in
         if len(a) > 2:
             raise SyntaxError(
                 'Response.render can be called with two arguments, at most')
@@ -447,30 +439,28 @@ class Response(Storage):
         self._vars.update(b)
         self._view_environment.update(self._vars)
         if view:
-            import cStringIO
+            from gluon._compat import StringIO
             (obody, oview) = (self.body, self.view)
-            (self.body, self.view) = (cStringIO.StringIO(), view)
-            run_view_in(self._view_environment)
-            page = self.body.getvalue()
+            (self.body, self.view) = (StringIO(), view)
+            page = run_view_in(self._view_environment)
             self.body.close()
             (self.body, self.view) = (obody, oview)
         else:
-            run_view_in(self._view_environment)
-            page = self.body.getvalue()
+            page = run_view_in(self._view_environment)
         return page
 
     def include_meta(self):
         s = "\n"
-        for meta in (self.meta or {}).iteritems():
+        for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
-                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
+                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key),
+                                                     to_native(xmlescape(v[key]))) for key in v) + ' />\n'
             else:
-                s += '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
+                s += '<meta name="%s" content="%s" />\n' % (k, to_native(xmlescape(v)))
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):
-
         """
         Includes files (usually in the head).
         Can minify and cache local files
@@ -497,8 +487,7 @@ class Response(Storage):
 
         if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
             # cache for 5 minutes by default
-            key = hashlib.md5(repr(files)).hexdigest()
-
+            key = hashlib_md5(repr(files)).hexdigest()
             cache = self.cache_includes or (current.cache.ram, 60 * 5)
 
             def call_minify(files=files):
@@ -536,6 +525,7 @@ class Response(Storage):
                 tmpl = template_mapping.get(f)
                 if tmpl:
                     s.append(tmpl % item[1])
+
         self.write(''.join(s), escape=False)
 
     def stream(self,
@@ -580,7 +570,7 @@ class Response(Storage):
 
         if not request:
             request = current.request
-        if isinstance(stream, (str, unicode)):
+        if isinstance(stream, (str, unicodeT)):
             stream_file_or_304_or_206(stream,
                                       chunk_size=chunk_size,
                                       request=request,
@@ -591,9 +581,9 @@ class Response(Storage):
         if hasattr(stream, 'name'):
             filename = stream.name
 
-        if filename and not 'content-type' in keys:
+        if filename and 'content-type' not in keys:
             headers['Content-Type'] = contenttype(filename)
-        if filename and not 'content-length' in keys:
+        if filename and 'content-length' not in keys:
             try:
                 headers['Content-Length'] = \
                     os.path.getsize(filename)
@@ -651,16 +641,22 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
+            # Browsers still don't have a simple uniform way to have non ascii
+            # characters in the filename so for now we are percent encoding it
+            if isinstance(download_filename, unicodeT):
+                download_filename = download_filename.encode('utf-8')
+            download_filename = urllib_quote(download_filename)
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
-    def json(self, data, default=None):
+    def json(self, data, default=None, indent=None):
         if 'Content-Type' not in self.headers:
             self.headers['Content-Type'] = 'application/json'
-        return json(data, default=default or custom_json)
+        return json(data, default=default or custom_json, indent=indent)
 
     def xmlrpc(self, request, methods):
+        from gluon.xmlrpc import handler
         """
         assuming::
 
@@ -677,7 +673,7 @@ class Response(Storage):
             import xmlrpclib
             connection = xmlrpclib.ServerProxy(
                 'http://hostname/app/contr/func')
-            print connection.add(3, 4)
+            print(connection.add(3, 4))
 
         """
 
@@ -692,7 +688,7 @@ class Response(Storage):
         dbstats = []
         dbtables = {}
         infos = DAL.get_instances()
-        for k, v in infos.iteritems():
+        for k, v in iteritems(infos):
             dbstats.append(TABLE(*[TR(PRE(row[0]), '%.2fms' % (row[1]*1000))
                                    for row in v['dbstats']]))
             dbtables[k] = dict(defined=v['dbtables']['defined'] or '[no defined tables]',
@@ -1034,7 +1030,7 @@ class Session(Storage):
         if self._forget:
             del rcookies[response.session_id_name]
             return
-        if self.get('httponly_cookies',True):
+        if self.get('httponly_cookies', True):
             scookies['HttpOnly'] = True
         if self._secure:
             scookies['secure'] = True
@@ -1142,6 +1138,12 @@ class Session(Storage):
         return True
 
     def _unchanged(self, response):
+        if response.session_new:
+            internal = ['_last_timestamp', '_secure', '_start_timestamp']
+            for item in self.keys():
+                if item not in internal:
+                    return False
+            return True
         session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
@@ -1196,28 +1198,29 @@ class Session(Storage):
 
     def _try_store_in_file(self, request, response):
         try:
-            if (not response.session_id or self._forget
+            if (not response.session_id or
+                not response.session_filename or
+                self._forget
                     or self._unchanged(response)):
                 # self.clear_session_cookies()
-                self.save_session_id_cookie()
                 return False
-            if response.session_new or not response.session_file:
-                # Tests if the session sub-folder exists, if not, create it
-                session_folder = os.path.dirname(response.session_filename)
-                if not os.path.exists(session_folder):
-                    os.mkdir(session_folder)
-                response.session_file = recfile.open(response.session_filename, 'wb')
-                portalocker.lock(response.session_file, portalocker.LOCK_EX)
-                response.session_locked = True
-            if response.session_file:
-                session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
-                response.session_file.write(session_pickled)
-                response.session_file.truncate()
+            else:
+                if response.session_new or not response.session_file:
+                    # Tests if the session sub-folder exists, if not, create it
+                    session_folder = os.path.dirname(response.session_filename)
+                    if not os.path.exists(session_folder):
+                        os.mkdir(session_folder)
+                    response.session_file = recfile.open(response.session_filename, 'wb')
+                    portalocker.lock(response.session_file, portalocker.LOCK_EX)
+                    response.session_locked = True
+                if response.session_file:
+                    session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
+                    response.session_file.write(session_pickled)
+                    response.session_file.truncate()
+                return True
         finally:
             self._close(response)
-
-        self.save_session_id_cookie()
-        return True
+            self.save_session_id_cookie()
 
     def _unlock(self, response):
         if response and response.session_file and response.session_locked:
@@ -1240,4 +1243,4 @@ class Session(Storage):
 def pickle_session(s):
     return Session, (dict(s),)
 
-copy_reg.pickle(Session, pickle_session)
+copyreg.pickle(Session, pickle_session)

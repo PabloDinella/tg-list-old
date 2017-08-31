@@ -14,6 +14,11 @@ from pydal import DAL as DAL
 from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Set, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
+from pydal.migrator import Migrator, InDBMigrator
+from gluon.serializers import custom_json, xml
+from gluon.utils import web2py_uuid
+from gluon import sqlhtml
+from pydal.drivers import DRIVERS
 
 
 def _default_validators(db, field):
@@ -76,16 +81,12 @@ def _default_validators(db, field):
     if field.unique:
         requires.insert(0, validators.IS_NOT_IN_DB(db, field))
     excluded_fields = ['string', 'upload', 'text', 'password', 'boolean']
-    if (field.notnull or field.unique) and not field_type in excluded_fields:
+    if (field.notnull or field.unique) and field_type not in excluded_fields:
         requires.insert(0, validators.IS_NOT_EMPTY())
     elif not field.notnull and not field.unique and requires:
-        requires[0] = validators.IS_EMPTY_OR(requires[0], null='' if field in ('string', 'text', 'password') else None)
+        requires[0] = \
+            validators.IS_EMPTY_OR(requires[0], null='' if field.type in ('string', 'text', 'password') else None)
     return requires
-
-from gluon.serializers import custom_json, xml
-from gluon.utils import web2py_uuid
-from gluon import sqlhtml
-
 
 DAL.serializers = {'json': custom_json, 'xml': xml}
 DAL.validators_method = _default_validators
@@ -97,8 +98,7 @@ DAL.representers = {
 DAL.Field = Field
 DAL.Table = Table
 
-#: add web2py contrib drivers to pyDAL
-from pydal.drivers import DRIVERS
+# add web2py contrib drivers to pyDAL
 if not DRIVERS.get('pymysql'):
     try:
         from .contrib import pymysql

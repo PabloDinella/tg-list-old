@@ -4,13 +4,8 @@ import os
 import re
 import gzip
 import tarfile
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-from xmlrpclib import ProtocolError
 from gluon.contrib.simplejsonrpc import ServerProxy
-
+from gluon._compat import StringIO, ProtocolError
 
 def deploy():
     response.title = T('Deploy to pythonanywhere')

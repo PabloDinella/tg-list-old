@@ -3,17 +3,21 @@
 # created by Massimo Di Pierro
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
+from __future__ import print_function
 import re
+import sys
 import urllib
-from cgi import escape
-from string import maketrans
+import ast
 
-try:
-    from ast import parse as ast_parse
-    import ast
-except ImportError:  # python 2.5
-    from compiler import parse
-    import compiler.ast as ast
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    from urllib import quote as urllib_quote
+    from string import maketrans
+else:
+    from urllib.parse import quote as urllib_quote
+    maketrans = str.maketrans
+
 
 """
 TODO: next version should use MathJax
@@ -45,11 +49,11 @@ Example of usage:
 ``
 m = "Hello **world** [[link http://web2py.com]]"
 from markmin2html import markmin2html
-print markmin2html(m)
+print(markmin2html(m))
 from markmin2latex import markmin2latex
-print markmin2latex(m)
+print(markmin2latex(m))
 from markmin2pdf import markmin2pdf # requires pdflatex
-print markmin2pdf(m)
+print(markmin2pdf(m))
 ``
 ====================
 # This is a test block
@@ -547,7 +551,7 @@ regex_code = re.compile(
     '(' + META + '|' + DISABLED_META + r'|````)|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',
     re.S)
 regex_strong = re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
-regex_del = re.compile(r'~~(?P<t>[^\s*]+( +[^\s*]+)*)~~')
+regex_del = re.compile(r'~~(?P<t>[^\s~]+( +[^\s~]+)*)~~')
 regex_em = re.compile(r"''(?P<t>([^\s']| |'(?!'))+)''")
 regex_num = re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
 regex_list = re.compile('^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s*)?(.*)$')
@@ -567,6 +571,29 @@ ttab_in = maketrans("'`:*~\\[]{}@$+-.#\n", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14
 ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05', "'`:*~\\[]{}@$+-.#\n")
 regex_quote = re.compile('(?P<name>\w+?)\s*\=\s*')
 
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;")  # Must be done first!                                                                                           
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
 
 def make_dict(b):
     return '{%s}' % regex_quote.sub("'\g<name>':", b)
@@ -582,7 +609,7 @@ def safe_eval(node_or_string, env):
     _safe_names = {'None': None, 'True': True, 'False': False}
     _safe_names.update(env)
     if isinstance(node_or_string, basestring):
-        node_or_string = ast_parse(node_or_string, mode='eval')
+        node_or_string = ast.parse(node_or_string, mode='eval')
     if isinstance(node_or_string, ast.Expression):
         node_or_string = node_or_string.body
 
@@ -602,14 +629,14 @@ def safe_eval(node_or_string, env):
             if node.id in _safe_names:
                 return _safe_names[node.id]
         elif isinstance(node, ast.BinOp) and \
-                isinstance(node.op, (Add, Sub)) and \
-                isinstance(node.right, Num) and \
+                isinstance(node.op, (ast.Add, ast.Sub)) and \
+                isinstance(node.right, ast.Num) and \
                 isinstance(node.right.n, complex) and \
-                isinstance(node.left, Num) and \
+                isinstance(node.left, ast.Num) and \
                 isinstance(node.left.n, (int, long, float)):
             left = node.left.n
             right = node.right.n
-            if isinstance(node.op, Add):
+            if isinstance(node.op, ast.Add):
                 return left + right
             else:
                 return left - right
@@ -650,7 +677,7 @@ def replace_components(text, env):
                 pass
             try:
                 f = f(**b) if isinstance(b, dict) else f(b)
-            except Exception, e:
+            except Exception as e:
                 f = 'ERROR: %s' % e
             return str(f)
 
@@ -768,7 +795,7 @@ def render(text,
     '<table><tbody><tr class="first"><td>a</td><td>b</td></tr><tr class="even"><td>c</td><td>d</td></tr></tbody></table>'
 
     >>> render("----\\nhello world\\n----\\n")
-    '<blockquote>hello world</blockquote>'
+    '<blockquote><p>hello world</p></blockquote>'
 
     >>> render('[[myanchor]]')
     '<p><span class="anchor" id="markmin_myanchor"></span></p>'
@@ -803,7 +830,7 @@ def render(text,
     >>> render("``aaa``:custom", extra=dict(custom=lambda text: 'x'+text+'x'))
     'xaaax'
 
-    >>> print render(r"$$\int_a^b sin(x)dx$$")
+    >>> print(render(r"$$\int_a^b sin(x)dx$$"))
     <img src="http://chart.apis.google.com/chart?cht=tx&chl=%5Cint_a%5Eb%20sin%28x%29dx" />
 
     >>> markmin2html(r"use backslash: \[\[[[mess\[[ag\]]e link]]\]]")
@@ -949,12 +976,12 @@ def render(text,
     if protolinks == "default":
         protolinks = protolinks_simple
     pp = '\n' if pretty_print else ''
-    if isinstance(text, unicode):
-        text = text.encode('utf8')
-    text = str(text or '')
+    text = text if text is None or isinstance(text, str) else text.decode('utf8', 'strict')
+
+    if not (isinstance(text, str)):
+        text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
     text = text.replace('\x05', '').replace('\r\n', '\n')  # concatenate strings separeted by \\n
-
     if URL is not None:
         text = replace_at_urls(text, URL)
 
@@ -998,7 +1025,7 @@ def render(text,
         return LINK
 
     text = regex_link.sub(mark_link, text)
-    text = escape(text)
+    text = local_html_escape(text)
 
     if protolinks:
         text = regex_proto.sub(lambda m: protolinks(*m.group('p', 'k')), text)
@@ -1039,7 +1066,7 @@ def render(text,
             if pend and mtag == '.':  # paragraph in a list:
                 out.append(etags.pop())
                 ltags.pop()
-            for i in xrange(lent - lev):
+            for i in range(lent - lev):
                 out.append('<' + tag + '>' + pp)
                 etags.append('</' + tag + '>' + pp)
                 lev += 1
@@ -1048,7 +1075,7 @@ def render(text,
         elif lent == lev:
             if tlev[-1] != tag:
                 # type of list is changed (ul<=>ol):
-                for i in xrange(ltags.count(lent)):
+                for i in range(ltags.count(lent)):
                     ltags.pop()
                     out.append(etags.pop())
                 tlev[-1] = tag
@@ -1213,7 +1240,7 @@ def render(text,
                 s = '<blockquote%s%s>%s</blockquote>%s' \
                     % (t_cls,
                        t_id,
-                       '\n'.join(strings[bq_begin:lineno]), pp)
+                       render('\n'.join(strings[bq_begin:lineno])), pp)
                 mtag = 'q'
         else:
             s = '<hr />'
@@ -1326,10 +1353,10 @@ def render(text,
         t, a, k, p, w = m.group('t', 'a', 'k', 'p', 'w')
         if not k:
             return m.group(0)
-        k = escape(k)
+        k = local_html_escape(k)
         t = t or ''
         style = 'width:%s' % w if w else ''
-        title = ' title="%s"' % escape(a).replace(META, DISABLED_META) if a else ''
+        title = ' title="%s"' % local_html_escape(a).replace(META, DISABLED_META) if a else ''
         p_begin = p_end = ''
         if p == 'center':
             p_begin = '<p style="text-align:center">'
@@ -1353,7 +1380,7 @@ def render(text,
                        autolinks, protolinks, class_prefix, id_prefix, pretty_print)
             return '<%(p)s controls="controls"%(title)s%(style)s><source src="%(k)s" />%(t)s</%(p)s>' \
                    % dict(p=p, title=title, style=style, k=k, t=t)
-        alt = ' alt="%s"' % escape(t).replace(META, DISABLED_META) if t else ''
+        alt = ' alt="%s"' % local_html_escape(t).replace(META, DISABLED_META) if t else ''
         return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s />%(end)s' \
                % dict(begin=p_begin, k=k, alt=alt, title=title, style=style, end=p_end)
 
@@ -1362,12 +1389,12 @@ def render(text,
         if not k and not t:
             return m.group(0)
         t = t or ''
-        a = escape(a) if a else ''
+        a = local_html_escape(a) if a else ''
         if k:
             if '#' in k and ':' not in k.split('#')[0]:
                 # wikipage, not external url
                 k = k.replace('#', '#' + id_prefix)
-            k = escape(k)
+            k = local_html_escape(k)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
             target = ' target="_blank"' if p == 'popup' else ''
             t = render(t, {}, {}, 'br', URL, environment, latex, None,
@@ -1377,7 +1404,7 @@ def render(text,
         if t == 'NEWLINE' and not a:
             return '<br />' + pp
         return '<span class="anchor" id="%s">%s</span>' % (
-            escape(id_prefix + t),
+            local_html_escape(id_prefix + t),
             render(a, {}, {}, 'br', URL,
                    environment, latex, autolinks,
                    protolinks, class_prefix,
@@ -1403,7 +1430,7 @@ def render(text,
     def expand_meta(m):
         code, b, p, s = segments.pop(0)
         if code is None or m.group() == DISABLED_META:
-            return escape(s)
+            return local_html_escape(s)
         if b in extra:
             if code[:1] == '\n':
                 code = code[1:]
@@ -1415,9 +1442,9 @@ def render(text,
                 return str(extra[b](code))
         elif b == 'cite':
             return '[' + ','.join('<a href="#%s" class="%s">%s</a>' %
-                                  (id_prefix + d, b, d) for d in escape(code).split(',')) + ']'
+                                  (id_prefix + d, b, d) for d in local_html_escape(code).split(',')) + ']'
         elif b == 'latex':
-            return LATEX % urllib.quote(code)
+            return LATEX % urllib_quote(code)
         elif b in html_colors:
             return '<span style="color: %s">%s</span>' \
                    % (b, render(code, {}, {}, 'br', URL, environment, latex,
@@ -1430,12 +1457,12 @@ def render(text,
                    % (fg, bg, render(code, {}, {}, 'br', URL, environment, latex,
                                      autolinks, protolinks, class_prefix, id_prefix, pretty_print))
         cls = ' class="%s%s"' % (class_prefix, b) if b and b != 'id' else ''
-        id = ' id="%s%s"' % (id_prefix, escape(p)) if p else ''
+        id = ' id="%s%s"' % (id_prefix, local_html_escape(p)) if p else ''
         beg = (code[:1] == '\n')
         end = [None, -1][code[-1:] == '\n']
         if beg and end:
-            return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, escape(code[1:-1]), pp)
-        return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
+            return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, local_html_escape(code[1:-1]), pp)
+        return '<code%s%s>%s</code>' % (cls, id, local_html_escape(code[beg:end]))
 
     text = regex_expand_meta.sub(expand_meta, text)
 
@@ -1494,17 +1521,17 @@ if __name__ == '__main__':
                 pre { background-color: #E0E0E0; padding: 5px; }
               </style>""")[1:]
 
-        print html % dict(title="Markmin markup language",
+        print(html % dict(title="Markmin markup language",
                           style=style,
-                          body=markmin2html(__doc__, pretty_print=True))
+                          body=markmin2html(__doc__, pretty_print=True)))
     elif sys.argv[1:2] == ['-t']:
         from timeit import Timer
 
         loops = 1000
         ts = Timer("markmin2html(__doc__)", "from markmin2html import markmin2html")
-        print 'timeit "markmin2html(__doc__)":'
+        print('timeit "markmin2html(__doc__)":')
         t = min([ts.timeit(loops) for i in range(3)])
-        print "%s loops, best of 3: %.3f ms per loop" % (loops, t / 1000 * loops)
+        print("%s loops, best of 3: %.3f ms per loop" % (loops, t / 1000 * loops))
     elif len(sys.argv) > 1:
         fargv = open(sys.argv[1], 'r')
         try:
@@ -1523,15 +1550,15 @@ if __name__ == '__main__':
             else:
                 markmin_style = ""
 
-            print html % dict(title=sys.argv[1], style=markmin_style,
-                              body=markmin2html(markmin_text, pretty_print=True))
+            print(html % dict(title=sys.argv[1], style=markmin_style,
+                              body=markmin2html(markmin_text, pretty_print=True)))
         finally:
             fargv.close()
 
     else:
-        print "Usage: " + sys.argv[0] + " -h | -t | file.markmin [file.css|@path_to/css]"
-        print "where: -h  - print __doc__"
-        print "       -t  - timeit __doc__ (for testing purpuse only)"
-        print "       file.markmin  [file.css] - process file.markmin + built in file.css (optional)"
-        print "       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)"
+        print("Usage: " + sys.argv[0] + " -h | -t | file.markmin [file.css|@path_to/css]")
+        print("where: -h  - print __doc__")
+        print("       -t  - timeit __doc__ (for testing purpuse only)")
+        print("       file.markmin  [file.css] - process file.markmin + built in file.css (optional)")
+        print("       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)")
         run_doctests()

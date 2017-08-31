@@ -7,9 +7,6 @@
 import sys
 import os
 import unittest
-from fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 from gluon.dal import DAL, Field
 
@@ -34,7 +31,7 @@ class TestDALSubclass(unittest.TestCase):
         db.close()
 
     def testSerialization(self):
-        import pickle
+        from gluon._compat import pickle
         db = DAL(check_reserved=['all'])
         db.define_table('t_a', Field('f_a'))
         db.t_a.insert(f_a='test')
@@ -62,7 +59,7 @@ def _prepare_exec_for_file(filename):
         raise 'The file provided (%s) does is not a valid Python file.'
     filename = os.path.realpath(filename)
     dirpath = filename
-    while 1:
+    while True:
         dirpath, extra = os.path.split(dirpath)
         module.append(extra)
         if not os.path.isfile(os.path.join(dirpath, '__init__.py')):
@@ -118,8 +115,3 @@ class TestDALAdapters(unittest.TestCase):
             os.environ["DB"] = "postgres:pg8000://postgres:@localhost/pydal"
             result = self._run_tests()
             self.assertTrue(result)
-
-
-if __name__ == '__main__':
-    unittest.main()
-    tearDownModule()

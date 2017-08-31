@@ -1,15 +1,15 @@
 language: python
 
-sudo: false
+sudo: required
 
 cache: pip
 
 python:
-  - '2.6'
   - '2.7'
   - 'pypy'
-  - '3.3'
   - '3.4'
+  - '3.5'
+  - '3.6'
 
 install:
   - pip install tox>=1.8
@@ -22,29 +22,25 @@ env:
     - ADAPTER=mysql
     - ADAPTER=postgres
     - ADAPTER=postgresPG8000
-    - ADAPTER=postgres2
+    - ADAPTER=postgres3
+    - ADAPTER=postgres3PG8000
     - ADAPTER=google
     - ADAPTER=mongo
-    - ADAPTER=imap
 
 matrix:
   exclude:
     - python: 'pypy'
       env: ADAPTER=postgres
     - python: 'pypy'
-      env: ADAPTER=postgres2
+      env: ADAPTER=postgres3
     - python: 'pypy'
       env: ADAPTER=google
-    - python: '2.6'
-      env: ADAPTER=google
-    - python: '3.3'
-      env: ADAPTER=google
-    - python: '3.3'
-      env: ADAPTER=imap
     - python: '3.4'
       env: ADAPTER=google
-    - python: '3.4'
-      env: ADAPTER=imap
+    - python: '3.5'
+      env: ADAPTER=google
+    - python: '3.6'
+      env: ADAPTER=google
 
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install codecov; fi
@@ -55,8 +51,8 @@ before_script:
   - if [[ $ADAPTER == postgres* ]]; then psql -c 'SHOW SERVER_VERSION' -U postgres; fi
 
   # Install last sdk for app engine (update only whenever a new release is available)
-  - if [[ $ADAPTER == google ]]; then wget https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.25.zip -nv; fi
-  - if [[ $ADAPTER == google ]]; then unzip -q google_appengine_1.9.25.zip; fi
+  - if [[ $ADAPTER == google ]]; then wget https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.50.zip -nv; fi
+  - if [[ $ADAPTER == google ]]; then unzip -q google_appengine_1.9.50.zip; fi
   - if [[ $ADAPTER == google ]]; then mv -f ./google_appengine/google ./google; fi
 
 

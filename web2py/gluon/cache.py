@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import thread
 import os
 import gc
 import sys
@@ -31,22 +30,17 @@ import hashlib
 import datetime
 import tempfile
 from gluon import recfile
-from gluon import portalocker
 from collections import defaultdict
-try:
-    from collections import OrderedDict
-except ImportError:
-    from gluon.contrib.ordereddict import OrderedDict
+from collections import OrderedDict
+
 try:
     from gluon import settings
     have_settings = True
 except ImportError:
     have_settings = False
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from pydal.contrib import portalocker
+from gluon._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:
     import psutil
@@ -161,7 +155,7 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for key in storage.keys():
+        for key in list(storage.keys()):
             if r.match(str(key)):
                 del storage[key]
         return
@@ -267,7 +261,7 @@ class CacheInRam(CacheAbstract):
             if key in self.storage:
                 value = self.storage[key][1] + value
             self.storage[key] = (time.time(), value)
-        except BaseException, e:
+        except BaseException as e:
             self.locker.release()
             raise e
         self.locker.release()
@@ -310,13 +304,13 @@ class CacheOnDisk(CacheAbstract):
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """
-                    return base64.b32encode(key)
+                    return to_native(base64.b32encode(to_bytes(key)))
 
                 def key_filter_out_windows(key):
                     """
                     We need to decode the keys so regex based removal works.
                     """
-                    return base64.b32decode(key)
+                    return to_native(base64.b32decode(to_bytes(key)))
 
                 self.key_filter_in = key_filter_in_windows
                 self.key_filter_out = key_filter_out_windows
@@ -630,14 +624,14 @@ class Cache(object):
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib.md5('__'.join(cache_key)).hexdigest()
+                    cache_key = hashlib_md5('__'.join(cache_key)).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:
                         # action returns something
                         rtn = cache_model(cache_key, lambda: func(), time_expire=time_expire)
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         rtn = cache_model(cache_key, lambda: e.body, time_expire=time_expire)
                         http, status = HTTP(e.status, rtn, **e.headers), e.status
@@ -650,7 +644,7 @@ class Cache(object):
                         # action returns something
                         rtn = func()
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         status = e.status
                         http = HTTP(e.status, e.body, **e.headers)

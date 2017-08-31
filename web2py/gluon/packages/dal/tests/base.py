@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from ._compat import unittest
-from ._adapt import DEFAULT_URI, drop, IS_MSSQL, IS_IMAP, IS_GAE
+from ._adapt import DEFAULT_URI, drop, IS_MSSQL, IS_IMAP, IS_GAE, IS_TERADATA
 from pydal import DAL, Field
 from pydal._compat import PY2
 
@@ -100,28 +100,89 @@ class TestUnicode(unittest.TestCase):
 class TestParseDateTime(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.223245', None)
+
+        #: skip for adapters that use drivers for datetime parsing
+        if db._adapter.parser.registered.get('datetime') is None:
+            return
+
+        parse = lambda v: db._adapter.parser.parse(v, 'datetime', 'datetime')
+
+        dt = parse('2015-09-04t12:33:36.223245')
         self.assertEqual(dt.microsecond, 223245)
         self.assertEqual(dt.hour, 12)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.223245Z', None)
+        dt = parse('2015-09-04t12:33:36.223245Z')
         self.assertEqual(dt.microsecond, 223245)
         self.assertEqual(dt.hour, 12)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.223245-2:0', None)
+        dt = parse('2015-09-04t12:33:36.223245-2:0')
         self.assertEqual(dt.microsecond, 223245)
         self.assertEqual(dt.hour, 10)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36+1:0', None)
+        dt = parse('2015-09-04t12:33:36+1:0')
         self.assertEqual(dt.microsecond, 0)
         self.assertEqual(dt.hour, 13)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.123', None)
+        dt = parse('2015-09-04t12:33:36.123')
         self.assertEqual(dt.microsecond, 123000)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.00123', None)
+        dt = parse('2015-09-04t12:33:36.00123')
         self.assertEqual(dt.microsecond, 1230)
 
-        dt=db._adapter.parsemap['datetime']('2015-09-04t12:33:36.1234567890', None)
+        dt = parse('2015-09-04t12:33:36.1234567890')
         self.assertEqual(dt.microsecond, 123456)
+        db.close()
+
+@unittest.skipIf(IS_IMAP, "chained join unsupported on IMAP")
+@unittest.skipIf(IS_TERADATA, "chained join unsupported on TERADATA")
+class TestChainedJoinUNIQUE(unittest.TestCase):
+    # 1:1 relation
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        db.define_table('aa',Field('name'))
+        db.define_table('bb',Field('aa','reference aa'),Field('name'))
+        for k in ('x','y','z'):
+            i = db.aa.insert(name=k)
+            for j in ('u','v','w'):
+                db.bb.insert(aa=i,name=k+j)
+        db.commit()
+        rows = db(db.aa).select()
+        rows.join(db.bb.aa, fields=[db.bb.name], orderby=[db.bb.name])
+        self.assertEqual(rows[0].bb[0].name, 'xu')
+        self.assertEqual(rows[0].bb[1].name, 'xv')
+        self.assertEqual(rows[0].bb[2].name, 'xw')
+        self.assertEqual(rows[1].bb[0].name, 'yu')
+        self.assertEqual(rows[1].bb[1].name, 'yv')
+        self.assertEqual(rows[1].bb[2].name, 'yw')
+        self.assertEqual(rows[2].bb[0].name, 'zu')
+        self.assertEqual(rows[2].bb[1].name, 'zv')
+        self.assertEqual(rows[2].bb[2].name, 'zw')
+
+        rows = db(db.bb).select()
+        rows.join(db.aa.id, fields=[db.aa.name])
+        
+        self.assertEqual(rows[0].aa.name, 'x')
+        self.assertEqual(rows[1].aa.name, 'x')
+        self.assertEqual(rows[2].aa.name, 'x')
+        self.assertEqual(rows[3].aa.name, 'y')
+        self.assertEqual(rows[4].aa.name, 'y')
+        self.assertEqual(rows[5].aa.name, 'y')
+        self.assertEqual(rows[6].aa.name, 'z')
+        self.assertEqual(rows[7].aa.name, 'z')
+        self.assertEqual(rows[8].aa.name, 'z')
+
+        rows_json = rows.as_json()
+        drop(db.bb)
+        drop(db.aa)
+        db.close()
+
+class TestNullAdapter(unittest.TestCase):
+    # Test that NullAdapter can define tables
+
+    def testRun(self):
+        db = DAL(None)
+        db.define_table('no_table', Field('aa'))
+        self.assertIsInstance(db.no_table.aa, Field)
+        self.assertIsInstance(db.no_table['aa'], Field)
         db.close()

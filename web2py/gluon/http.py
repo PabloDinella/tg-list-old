@@ -11,6 +11,7 @@ HTTP statuses helpers
 """
 
 import re
+from gluon._compat import iteritems, unicodeT, to_bytes
 
 __all__ = ['HTTP', 'redirect']
 
@@ -109,23 +110,30 @@ class HTTP(Exception):
         if status[:1] == '4':
             if not body:
                 body = status
-            if isinstance(body, str):
+            if isinstance(body, (str, bytes, bytearray)):
+                if isinstance(body, unicodeT):
+                    body = to_bytes(body) # This must be done before len
                 headers['Content-Length'] = len(body)
         rheaders = []
-        for k, v in headers.iteritems():
+        for k, v in iteritems(headers):
             if isinstance(v, list):
                 rheaders += [(k, str(item)) for item in v]
-            elif not v is None:
+            elif v is not None:
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
         if env.get('request_method', '') == 'HEAD':
             return ['']
-        elif isinstance(body, str):
+        elif isinstance(body, (str, bytes, bytearray)):
+            if isinstance(body, unicodeT):
+                body = to_bytes(body)
             return [body]
         elif hasattr(body, '__iter__'):
             return body
         else:
-            return [str(body)]
+            body = str(body)
+            if isinstance(body, unicodeT):
+                body = to_bytes(body)
+            return [body]
 
     @property
     def message(self):
@@ -147,7 +155,7 @@ class HTTP(Exception):
             web2py_error=self.headers.get('web2py_error'))
 
     def __str__(self):
-        "stringify me"
+        """stringify me"""
         return self.message
 
 
@@ -162,7 +170,7 @@ def redirect(location='', how=303, client_side=False, headers=None):
     """
     headers = headers or {}
     if location:
-        from gluon import current
+        from gluon.globals import current
         loc = location.replace('\r', '%0D').replace('\n', '%0A')
         if client_side and current.request.ajax:
             headers['web2py-redirect-location'] = loc
@@ -173,7 +181,7 @@ def redirect(location='', how=303, client_side=False, headers=None):
                        'You are being redirected <a href="%s">here</a>' % loc,
                        **headers)
     else:
-        from gluon import current
+        from gluon.globals import current
         if client_side and current.request.ajax:
             headers['web2py-component-command'] = 'window.location.reload(true)'
             raise HTTP(200, **headers)

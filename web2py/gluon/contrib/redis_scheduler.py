@@ -8,12 +8,14 @@
 Scheduler with redis backend
 ---------------------------------
 """
+from __future__ import print_function
 
 import os
 import time
 import socket
 import datetime
 import logging
+from json import loads, dumps
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
 from gluon.scheduler import *
@@ -30,7 +32,7 @@ from gluon.contrib.redis_utils import RConn
 from gluon.contrib.redis_scheduler import RScheduler
 
 def demo1(*args,**vars):
-    print 'you passed args=%s and vars=%s' % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return 'done!'
 
 def demo2():
@@ -51,17 +53,6 @@ path = os.getcwd()
 
 if 'WEB2PY_PATH' not in os.environ:
     os.environ['WEB2PY_PATH'] = path
-
-try:
-    # try external module
-    from simplejson import loads, dumps
-except ImportError:
-    try:
-        # try stdlib (Python >= 2.6)
-        from json import loads, dumps
-    except:
-        # fallback to pure-Python module
-        from gluon.contrib.simplejson import loads, dumps
 
 IDENTIFIER = "%s#%s" % (socket.gethostname(), os.getpid())
 
@@ -327,7 +318,7 @@ class RScheduler(Scheduler):
         now = self.now()
         status_keyset = self._nkey('worker_statuses')
         with r_server.pipeline() as pipe:
-            while 1:
+            while True:
                 try:
                     # making sure we're the only one doing the job
                     pipe.watch('ASSIGN_TASKS')
@@ -485,7 +476,10 @@ class RScheduler(Scheduler):
             logger.info('nothing to do')
             return None
         times_run = task.times_run + 1
-        if not task.prevent_drift:
+        if task.cronline:
+            cron_recur = CronParser(task.cronline, now.replace(second=0))
+            next_run_time = cron_recur.get_next()
+        elif not task.prevent_drift:
             next_run_time = task.last_run_time + datetime.timedelta(
                 seconds=task.period
             )
@@ -721,13 +715,20 @@ class RScheduler(Scheduler):
         tuuid = 'uuid' in kwargs and kwargs.pop('uuid') or web2py_uuid()
         tname = 'task_name' in kwargs and kwargs.pop('task_name') or function
         immediate = 'immediate' in kwargs and kwargs.pop('immediate') or None
-        rtn = self.db.scheduler_task.validate_and_insert(
-            function_name=function,
+        cronline = kwargs.get('cronline')
+        kwargs.update(function_name=function,
             task_name=tname,
             args=targs,
             vars=tvars,
-            uuid=tuuid,
-            **kwargs)
+            uuid=tuuid)
+        if cronline:
+            try:
+                start_time = kwargs.get('start_time', self.now)
+                next_run_time = CronParser(cronline, start_time).get_next()
+                kwargs.update(start_time=start_time, next_run_time=next_run_time)
+            except:
+                pass
+        rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
         if not rtn.errors:
             rtn.uuid = tuuid
             if immediate:

@@ -10,11 +10,9 @@ Cross-site scripting (XSS) defense
 -----------------------------------
 """
 
-from HTMLParser import HTMLParser
-from cgi import escape
-from urlparse import urlparse
+from gluon._compat import HTMLParser, urlparse, entitydefs, basestring
+from gluon.utils import local_html_escape
 from formatter import AbstractFormatter
-from htmlentitydefs import entitydefs
 from xml.sax.saxutils import quoteattr
 
 __all__ = ['sanitize']
@@ -23,7 +21,7 @@ __all__ = ['sanitize']
 def xssescape(text):
     """Gets rid of < and > and & and, for good measure, :"""
 
-    return escape(text, quote=True).replace(':', '&#58;')
+    return local_html_escape(text, quote=True).replace(':', '&#58;')
 
 
 class XssCleaner(HTMLParser):
@@ -131,7 +129,7 @@ class XssCleaner(HTMLParser):
 
     def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
-        self.in_disallowed.pop()
+        self.in_disallowed and self.in_disallowed.pop()
         if tag not in self.permitted_tags:
             if (not self.strip_disallowed):
                 self.result += xssescape(bracketed)

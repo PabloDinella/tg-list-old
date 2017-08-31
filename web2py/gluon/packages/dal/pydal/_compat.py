@@ -10,6 +10,7 @@ if PY2:
     import cPickle as pickle
     from cStringIO import StringIO
     import copy_reg as copyreg
+    BytesIO = StringIO
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -19,6 +20,7 @@ if PY2:
     string_types = (str, unicode)
     text_type = unicode
     basestring = basestring
+    long = long
     xrange = xrange
 
     def implements_iterator(cls):
@@ -39,9 +41,14 @@ if PY2:
         if isinstance(obj, unicode):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
+
+    def to_native(obj, charset='utf8', errors='strict'):
+        if obj is None or isinstance(obj, str):
+            return obj
+        return obj.encode(charset, errors)
 else:
     import pickle
-    from io import StringIO
+    from io import StringIO, BytesIO
     import copyreg
     from functools import reduce
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
@@ -52,6 +59,7 @@ else:
     string_types = (str,)
     text_type = str
     basestring = str
+    long = int
     xrange = range
 
     implements_iterator = _identity
@@ -65,6 +73,11 @@ else:
         if isinstance(obj, str):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
+
+    def to_native(obj, charset='utf8', errors='strict'):
+        if obj is None or isinstance(obj, str):
+            return obj
+        return obj.decode(charset, errors)
 
 
 def with_metaclass(meta, *bases):
