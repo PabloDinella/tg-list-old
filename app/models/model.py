@@ -13,8 +13,7 @@ auth.define_tables(username=False, signature=False)
 db.define_table('category',
                 Field('name', 'string'),
                 Field('slug', 'string'),
-                Field('parent', 'reference category'),
-                format=lambda r: r.name or 'anonymous')
+                Field('parent', 'reference category'))
 
 db.define_table(
     'kind',

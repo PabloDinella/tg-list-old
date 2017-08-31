@@ -11,6 +11,32 @@
 import datetime
 import time
 
+def run():
+    import os
+    import json
+    import re
+
+    jayzon = open(os.path.join(request.folder, 'uploads', 'entries.json'))
+    data = json.load(jayzon)
+
+        # for chat in data['canal']:
+        #     for tag in chat['tags']:
+        #         if db(db.chat.url == chat['link']).select().first():
+        #             break
+        #         cat_parsed = re.sub(r'([a-z])([A-Z])', r'\1 \2', tag)
+        #         cat = db(db.category.name == cat_parsed).select(db.category.id).first()
+        #         cat = cat.id if cat else db(db.category.slug == 'sem-categoria').select(db.category.id).first().id
+        #         db.chat.validate_and_insert(
+        #             name=chat['link'].split('/')[-1],
+        #             sent_by=db(db.auth_user).select().first().id,
+        #             url=chat['link'],
+        #             description=chat['desc'],
+        #             category=cat,
+        #             kind=2
+        #         )
+
+
+    return dict(grupos=data['grupo'])
 
 def index():
     """

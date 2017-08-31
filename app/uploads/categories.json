@@ -1,0 +1,121 @@
+[{
+  "name": "Banco De Dados",
+  "slug": "banco-de-dados"
+}, {
+  "name": "Wordpress",
+  "slug": "wordpress"
+}, {
+  "name": "Vagas",
+  "slug": "vagas"
+}, {
+  "name": "Cloud",
+  "slug": "cloud"
+}, {
+  "name": "Servers",
+  "slug": "servers"
+}, {
+  "name": "Regional",
+  "slug": "regional"
+}, {
+  "name": "Virtualização",
+  "slug": "virtualização"
+}, {
+  "name": "Windows",
+  "slug": "windows"
+}, {
+  "name": "Gestão",
+  "slug": "gestão"
+}, {
+  "name": "Android",
+  "slug": "android"
+}, {
+  "name": "Segurança",
+  "slug": "segurança"
+}, {
+  "name": "TI",
+  "slug": "ti"
+}, {
+  "name": "Web",
+  "slug": "web"
+}, {
+  "name": "Hacktivismo",
+  "slug": "hacktivismo"
+}, {
+  "name": "Design",
+  "slug": "design"
+}, {
+  "name": "Robótica",
+  "slug": "robótica"
+}, {
+  "name": "Tech",
+  "slug": "tech"
+}, {
+  "name": "BSD",
+  "slug": "bsd"
+}, {
+  "name": "Redes",
+  "slug": "redes"
+}, {
+  "name": "Hacking",
+  "slug": "hacking"
+}, {
+  "name": "Notícias",
+  "slug": "notícias"
+}, {
+  "name": "Software",
+  "slug": "software"
+}, {
+  "name": "Humor",
+  "slug": "humor"
+}, {
+  "name": "Data Science",
+  "slug": "data-science"
+}, {
+  "name": "Machine Learning",
+  "slug": "machine-learning"
+}, {
+  "name": "Linux",
+  "slug": "linux"
+}, {
+  "name": "Moeda Virtual",
+  "slug": "moeda-virtual"
+}, {
+  "name": "Hardware",
+  "slug": "hardware"
+}, {
+  "name": "Apple",
+  "slug": "apple"
+}, {
+  "name": "Office",
+  "slug": "office"
+}, {
+  "name": "Oracle",
+  "slug": "oracle"
+}, {
+  "name": "Software Livre",
+  "slug": "software-livre"
+}, {
+  "name": "Wallpapers",
+  "slug": "wallpapers"
+}, {
+  "name": "Mobile",
+  "slug": "mobile"
+}, {
+  "name": "Telegram",
+  "slug": "telegram"
+}, {
+  "name": "Geral",
+  "slug": "geral"
+}, {
+  "name": "Impressão 3D",
+  "slug": "impressão-3d"
+}, {
+  "name": "Gaming",
+  "slug": "gaming"
+}, {
+  "name": "Programação",
+  "slug": "programação"
+}, {
+  "name": "Outros",
+  "slug": "outros"
+}]
