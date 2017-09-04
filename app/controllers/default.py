@@ -10,11 +10,77 @@
 
 import datetime
 import time
+import re
+import os
+import urllib2
+
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    import unicodedata
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
+    value = unicode(re.sub('[-\s]+', '-', value))
+    return value
+
+def download_and_save_image(url, name):
+    user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+    headers = { 'User-Agent' : user_agent }
+    r = urllib2.Request(url, headers=headers)
+    image = urllib2.urlopen(r).read()
+
+    path = os.path.join(request.folder, 'uploads', name + '.jpg')
+    output = open(path,'wb')
+    output.write(image)
+    output.close()
+    return path
+
+def updateentries():
+    from bs4 import BeautifulSoup
+
+    chats = db(db.chat.id).select()
+
+    # for chat in chats:
+    #     if not re.match(r'^https?://', chat.url):
+    #         chat.update_record(url='https://' + chat.url)
+
+    # image = urllib2.urlopen('https://cdn1.telesco.pe/file/M5ErrvYy53JcB2zpw2ctlspoBqEvA2d_kCli5lQCQl3D1mUF26b-NkjpdiXLN1lim7vU0uElI91ir-rtI1F8X0OVhgqszHNm4YKp7y3EvNMiIsbiwOaaBeBagF3j7cEZgL23Yr06TzZf4wyhc8PvJ5FY1X3stLUZBuQOJGv1xRvyQwtOj9GTD7VsTl0UNDgjUsbQu0yiSVw9sZv4qptSO0dLl5nTCl2cNKt13yXS1IIM6BFvgEeXnc69ziX4R7zep4P3uPyUfNKlUaRbpsSeMDMJLXgLM2GbWRLU_M2aKtwcp2iyS2-5tJyfBztwvCKm0azPoGgPTj2shGRmXfOvqQ').read()
+    # updating = db(db.chat).select().first().update_record(image=image)
+    # updating = db(db.chat).select().first().update_record(image=db.chat.image.store(image, 'image'))
+    # print updating
+
+
+    for chat in chats:
+        try:
+            data = urllib2.urlopen(chat.url).read()
+            soup = BeautifulSoup(data)
+            name = soup.find(class_="tgme_page_title").get_text()
+            members = int(soup.find(class_="tgme_page_extra").get_text().split(' ')[0])
+            image_url = soup.find(class_="tgme_page_photo_image")['src']
+            image_path = download_and_save_image(image_url, slugify(name))
+
+            image_read = open(image_path, 'rb')
+            updating = chat.update_record(
+                name=name,
+                members=members,
+                image=db.chat.image.store(image_read, slugify(name) + '.jpg'),
+                description=chat.description.replace(chat.url, '')
+            )
+            print updating
+            print name
+            print members
+            print '\n'
+
+        except Exception as e:
+            print chat.description, e
+
+    return dict(oi='hehe')
 
 def run():
     import os
     import json
-    import re
 
     jayzon = open(os.path.join(request.folder, 'uploads', 'entries.json'))
     data = json.load(jayzon)
